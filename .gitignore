@@ -1,0 +1,59 @@
+# ==========================================
+# 1. SENSITIVE DATA & CREDENTIALS (NEVER LEAK)
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+certs/
+id_rsa
+
+# ==========================================
+# 2. OPERATING SYSTEM JUNK
+# ==========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.fuse_hidden*
+.directory
+.trash/
+
+# ==========================================
+# 3. COMMON IDES & EDITORS
+# ==========================================
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# IntelliJ / JetBrains
+.idea/
+*.iws
+*.iml
+
+# Vim / Emacs
+*~
+*.swp
+*.swo
+.package_envs
+
+# ==========================================
+# 4. GENERIC BUILD & LOGS
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+build/
+dist/
+out/
