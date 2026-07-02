@@ -10,14 +10,21 @@ public class CreateProductRequest
     
     [Required]
     [StringLength(25)]
-    public string SKU;
+    public string SKU { get; set; }
+    
+    [Required]
+    public string Description { get; set; }
     
     [Required]
     public double Price { get; set; }
     
+    
     [Required]
     public int QuantityInStock { get; set; }
+    
+    [Required]
     public string SupplierName { get; set; }
+    
     public DateTime ExpiryDate { get; set; }
 }
 
