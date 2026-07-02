@@ -61,6 +61,87 @@ public class FakeWarehouseStore
         _isSeeded = true;
     }
     
+    public List<Product> GetAll()
+    {
+        return DummyProducts;
+    }
+    
+    
+    //We want to implement the necessary methods that will be used in the controller
+    
+    //First the Read/Get Methods
+    public Product? GetById(string id)
+    {
+        foreach (var product in DummyProducts)
+        {
+            if (product.Id == id)
+            {
+                return product;
+            }
+        }
+        return null;
+    }
+    
+    public List<Product> Search(string? name, string? supplier)
+    {
+        return DummyProducts.Where(p => (string.IsNullOrWhiteSpace(name) ||
+                                         p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)) &&
+                                         (string.IsNullOrWhiteSpace(supplier) ||
+                                         p.SupplierName.Contains(supplier, StringComparison.OrdinalIgnoreCase))
+        ).ToList();
+    }
+    
+    //Second the Write/Set Methods
+    
+    public void Add(Product product)
+    {
+        DummyProducts.Add(product);
+    }
+
+    public bool UpdateQuantity(string id, int quantity)
+    {
+        var product = GetById(id);
+        if (product == null)
+            return false;
+        
+        product.QuantityInStock = quantity;
+        product.LastUpdatedAt = DateTime.UtcNow;
+        return true;
+    }
+
+    public bool UpdatePrice(string id, double price)
+    {
+        var product = GetById(id);
+        if (product == null)
+            return false;
+        
+        product.Price = price;
+        product.LastUpdatedAt = DateTime.UtcNow;
+        return true;
+    }
+
+    public bool Archive(string id)
+    {
+        var product =  GetById(id);
+        if (product == null)
+            return false;
+        
+        //Marks the product as Archived to make use of the isArchived property in the Product.cs class
+        product.IsArchived = true;
+        product.LastUpdatedAt = DateTime.UtcNow;
+        return true;
+    }
+    
+    public bool Delete(string id)
+    {
+        var product = GetById(id);
+        if (product == null)
+            return false;
+
+        DummyProducts.Remove(product);
+        return true;
+    }
+    
 }
 
     
