@@ -69,5 +69,7 @@ Endpoints:
 
 
 I also uploaded a file containing a few screenshots. I am unsure about the approach but I tried naming the screenshots what they are trying to showcase so it would be easier to understand what is going on.
+These screenshots can be found in the screenshots folder inside warehouse-management/warehouse-management.
+If this approach is bad or inneficient please inform a better way to do it for next time.
 
 
