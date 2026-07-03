@@ -21,6 +21,8 @@ public class ProductsController : ControllerBase
         public IActionResult GetAllProducts([FromQuery] bool onlyAvailable = false)
         {
                 var products = _store.GetAll();
+                products = products.Where(p => !p.IsArchived).ToList();
+                
                 if (onlyAvailable)
                 {
                         products = products.Where(p => p.QuantityInStock > 0).ToList();
@@ -37,17 +39,15 @@ public class ProductsController : ControllerBase
         public IActionResult GetProductById([FromRoute] string id)
         {       
                 
-                
-                if (!Guid.TryParse(id, out Guid guid))
-                        return BadRequest("Not a valid GUID");
+                if (string.IsNullOrWhiteSpace(id))
+                        return BadRequest("Invalid id");
                 
                 
                 var  product = _store.GetById(id);
                 
-                if (product == null)
-                {
+                if (product == null || product.IsArchived)
                         return NotFound("Product not found ");
-                }
+                
                 return Ok(product);
         }
         
@@ -58,7 +58,10 @@ public class ProductsController : ControllerBase
                 if ( string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(supplier))
                         return BadRequest("a product name or a Supplier must be provided");
                 
-                var products = _store.Search(name, supplier);
+                var products = _store.Search(name, supplier)
+                                .Where(p => !p.IsArchived)
+                                .ToList();
+                
                 return Ok(products);
         }
         
@@ -86,4 +89,128 @@ public class ProductsController : ControllerBase
                 return CreatedAtAction(nameof(GetProductById), new { id = newProduct.Id }, newProduct);
         }
         
+        // 5. Update Quantity
+
+        [HttpPost("{id}/quantity")]
+        public IActionResult UpdateQuantity([FromRoute] string id, [FromBody] UpdateProductQuantityRequest request)
+        {
+                if (request.QuantityInStock < 0)
+                        return BadRequest("Cannot update negative quantity");
+                
+                var product = _store.GetById(id);
+                
+                if (product == null || product.IsArchived)
+                        return NotFound("Product not found");
+                
+
+                var result = _store.UpdateQuantity(id, request.QuantityInStock);
+                
+                if (!result)
+                        return NotFound("Product not found");
+                
+                Console.WriteLine("Quantity updated. New Quantity is: " + request.QuantityInStock);
+                return Ok();
+        }
+        
+        //6. Update Price 
+
+        [HttpPost("{id}/price")]
+        public IActionResult UpdatePrice([FromRoute] string id, [FromBody] UpdateProductPriceRequest request)
+        {
+                if (request.Price <= 0)
+                        return BadRequest("Cannot update negative price");
+                
+                var product = _store.GetById(id);
+                
+                if  (product == null || product.IsArchived)
+                        return NotFound("Product not found");
+
+                var oldPrice = product.Price;
+                
+                var result = _store.UpdatePrice(id, request.Price);
+                
+                if (!result)
+                        return NotFound("Product not found");
+
+                Console.WriteLine($"Price updated from : {oldPrice} to {request.Price}");
+                return Ok();
+        }
+        
+        // 7. Upload image 
+        // This one was difficult I had to use AI
+        [HttpPost("{id}/image")]
+        public IActionResult UpdateImage([FromRoute] string id, [FromForm] IFormFile file)
+        {
+                var product = _store.GetById(id);
+                
+                if (product == null || product.IsArchived)
+                        return NotFound("Product not found");
+                
+                if (file == null || file.Length == 0)
+                        return BadRequest("File is empty");
+                
+                var possibleExtensions = new[] { ".jpg", ".png" };
+
+                var extension = Path.GetExtension(file.FileName).ToLower();
+
+                if (!possibleExtensions.Contains(extension))
+                        return BadRequest("Invalid file extension");
+                
+                if (file.Length > 2*1024*1024)
+                        return BadRequest("File too large");
+                
+                var folder = Path.Combine("wwwroot", "uploads");
+                
+                if (!Directory.Exists(folder))
+                        Directory.CreateDirectory(folder);
+                
+                var name = file.FileName;   
+                var path = Path.Combine(folder, name);
+
+                using (var stream = new FileStream(path, FileMode.Create))
+                {
+                        file.CopyTo(stream);
+                }
+                
+                return Ok(new {name, path});
+        }
+        
+        // 8. Delete product 
+
+        [HttpDelete("{id}")]
+        public IActionResult DeleteProduct([FromRoute] string id)
+        {
+                var product = _store.GetById(id);
+                if  (product == null || product.IsArchived)
+                        return NotFound("Product not found");
+                
+                product.IsArchived = true;
+                product.LastUpdatedAt =  DateTime.UtcNow;
+
+                return Ok();
+        }
+        
+        // 9.  Get warehouse server time 
+        // I didnt really understand this one so i also had AI assitance 
+
+        [HttpGet("server-time")]
+
+        public IActionResult GetServerTime([FromHeader(Name = "Accept-Language")] string? language)
+        {
+                var now = DateTime.UtcNow;
+                var culture = language switch
+                {
+                        "fr-FR" => new System.Globalization.CultureInfo("fr-FR"),
+                        "ar-LB" => new System.Globalization.CultureInfo("ar-LB"),
+                        _ => new System.Globalization.CultureInfo("en-US")
+                };
+                
+                var formattedTime = now.ToString("F", culture);
+                return Ok(new { serverTime = formattedTime });
+
+
+        }
+
+
+
 }
