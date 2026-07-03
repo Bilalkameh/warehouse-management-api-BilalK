@@ -127,6 +127,7 @@ public class FakeWarehouseStore
             return false;
         
         //Marks the product as Archived to make use of the isArchived property in the Product.cs class
+        // This turned out to be useless I really should remove it
         product.IsArchived = true;
         product.LastUpdatedAt = DateTime.UtcNow;
         return true;
