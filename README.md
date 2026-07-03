@@ -68,4 +68,6 @@ Endpoints:
  DELETE  /api/suppliers/{id} -> Deactivate supplier
 
 
+I also uploaded a file containing a few screenshots. I am unsure about the approach but I tried naming the screenshots what they are trying to showcase so it would be easier to understand what is going on.
+
 
