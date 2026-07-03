@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices.JavaScript;
 using Microsoft.AspNetCore.Mvc;
 using warehouse_management.Models;
 using warehouse_management.Contracts;
@@ -136,43 +135,59 @@ public class ProductsController : ControllerBase
                 return Ok();
         }
         
+        
         // 7. Upload image 
-        // This one was difficult I had to use AI
+        // This one was difficult I had to use AI also caused many bugs that I tried to fix using AI and finally it works
+        
         [HttpPost("{id}/image")]
-        public IActionResult UpdateImage([FromRoute] string id, [FromForm] IFormFile file)
+        public async Task<IActionResult> UploadImage([FromRoute] string? id, IFormFile? file)
         {
-                var product = _store.GetById(id);
-                
-                if (product == null || product.IsArchived)
-                        return NotFound("Product not found");
-                
-                if (file == null || file.Length == 0)
-                        return BadRequest("File is empty");
-                
-                var possibleExtensions = new[] { ".jpg", ".png" };
+                var product = FakeWarehouseStore.DummyProducts.FirstOrDefault(p => p.Id == id);
 
-                var extension = Path.GetExtension(file.FileName).ToLower();
-
-                if (!possibleExtensions.Contains(extension))
-                        return BadRequest("Invalid file extension");
-                
-                if (file.Length > 2*1024*1024)
-                        return BadRequest("File too large");
-                
-                var folder = Path.Combine("wwwroot", "uploads");
-                
-                if (!Directory.Exists(folder))
-                        Directory.CreateDirectory(folder);
-                
-                var name = file.FileName;   
-                var path = Path.Combine(folder, name);
-
-                using (var stream = new FileStream(path, FileMode.Create))
+                if (product is null)
                 {
-                        file.CopyTo(stream);
+                        return NotFound($"Product with id '{id}' was not found.");
                 }
-                
-                return Ok(new {name, path});
+
+                if (file is null || file.Length == 0)
+                {
+                        return BadRequest("No file was uploaded.");
+                }
+
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                {
+                        return BadRequest("Only .jpg, .jpeg, and .png files are allowed.");
+                }
+
+                const long maxSizeBytes = 2 * 1024 * 1024; // 2 MB
+                if (file.Length > maxSizeBytes)
+                {
+                        return BadRequest("File size must not exceed 2 MB.");
+                }
+
+                var uploadsFolder = Path.Combine(
+                        Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                await using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                        await file.CopyToAsync(stream);
+                }
+
+                var productImage = new ProductImage
+                {
+                        ProductId = product.Id,
+                        FileName = fileName,
+                        FilePath = $"/uploads/{fileName}"
+                };
+                product.LastUpdatedAt = DateTime.UtcNow;
+
+                return Ok(productImage);
         }
         
         // 8. Delete product 
