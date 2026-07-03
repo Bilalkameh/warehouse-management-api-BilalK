@@ -5,20 +5,20 @@ namespace warehouse_management.Models;
 public class Product
 {
     [Required(ErrorMessage = "Id required")]
-    [StringLength(50,MinimumLength = 1, ErrorMessage = "Id must be between 1 and 50 characters." )]
-    public string Id { get; set; }
+    [StringLength(50, MinimumLength = 1, ErrorMessage = "Id must be between 1 and 50 characters.")]
+    public string Id { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "Product name required.")]
     [StringLength(40, MinimumLength = 1,ErrorMessage = "Product name must be between 1 and 40 characters.")]
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
     
     
     [StringLength(25, ErrorMessage = "SKU cannot exceed 25 characters.")]
-    public string? SKU { get; set; }
+    public string? SKU { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "Product must have a description.")]
     [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters.")]
-    public string Description { get; set; }
+    public string Description { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "Product must have a price.")]
     [Range(0.01, double.MaxValue,ErrorMessage = "Price must be greater than zero.")]
@@ -29,7 +29,7 @@ public class Product
     public int QuantityInStock { get; set; }
 
     [Required(ErrorMessage = "Supplier name required.")]
-    public string SupplierName { get; set; }
+    public string SupplierName { get; set; } = string.Empty;
     public DateTime ExpiryDate { get; set; }
     public bool IsArchived { get; set; }
     public DateTime CreatedAt { get; set; }
