@@ -4,10 +4,12 @@ namespace warehouse_management;
 public class FakeSupplierStore
 {
     public static List<Supplier> DummySuppliers = new List<Supplier>();
+    
+    //Similar to the fakewarehouse.cs class this also prevents seeding multiple times
     private static bool _isSeeded;
 
     public FakeSupplierStore()
-    {
+    {   
         if (_isSeeded) return;
 
         var sup1 = new Supplier("74d3e479-2ef4-4c82-a4e0-b4b8d102fd9a", "sup1",
@@ -50,7 +52,9 @@ public class FakeSupplierStore
     {
         DummySuppliers.Add(supplier);
     }
-
+    
+    
+    // This one marks the supplier as inactive instead of removing it completely from the system
     public bool Deactivate(string id)
     {
         var supplier = GetSupplierById(id);
