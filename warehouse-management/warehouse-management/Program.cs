@@ -9,6 +9,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<FakeWarehouseStore>();
 builder.Services.AddSingleton<FakeSupplierStore>();
+builder.Services.AddSingleton<ProductService>();
+
+
 var app = builder.Build();
 
 app.UseSwagger();
