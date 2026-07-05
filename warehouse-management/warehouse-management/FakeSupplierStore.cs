@@ -3,15 +3,12 @@ namespace warehouse_management;
 
 public class FakeSupplierStore
 {
-    public static List<Supplier> DummySuppliers = new List<Supplier>();
+    public List<Supplier> DummySuppliers = new List<Supplier>();
     
-    //Similar to the fakewarehouse.cs class this also prevents seeding multiple times
-    private static bool _isSeeded;
+    //Adapted the store to use a Singleton and resolve it via Dependency Injection.
 
     public FakeSupplierStore()
     {   
-        if (_isSeeded) return;
-
         var sup1 = new Supplier("74d3e479-2ef4-4c82-a4e0-b4b8d102fd9a", "sup1",
             "lebanon", "sup1@mail.com","+961-81-123-456");
         
@@ -28,8 +25,6 @@ public class FakeSupplierStore
         DummySuppliers.Add(sup2);
         DummySuppliers.Add(sup3);
         DummySuppliers.Add(sup4);
-        _isSeeded = true;
-        
     }
 
     public List<Supplier> GetAllSuppliers()
@@ -43,7 +38,7 @@ public class FakeSupplierStore
         foreach (var supplier in DummySuppliers)
         {
             if (supplier.Id == id)
-                    return supplier;
+                return supplier;
         }
         return null;
     }

@@ -4,17 +4,14 @@ namespace warehouse_management;
 
 public class FakeWarehouseStore
 {
-    public static List<Product> DummyProducts = new List<Product>();
+    public List<Product> DummyProducts = new List<Product>();
     
-    //This prevents seeding the products multiple times if the constructor is called more than once.
-    private static bool _isSeeded;
+    //Adapted the store to use a Singleton and resolve it via Dependency Injection.
 
-
-
+    
     public FakeWarehouseStore()
     {
         
-        if (_isSeeded) return;
         
         var laptop1 = new Product("ceccabb0-71c0-4a5b-91de-47791acafbbd", "laptop1", "powerful gaming laptop",
             1299.9, 10, "laptopSupplier1", new DateTime(2029, 2, 7));
@@ -57,8 +54,6 @@ public class FakeWarehouseStore
         DummyProducts.Add(printer1);
         DummyProducts.Add(monitor1);
         DummyProducts.Add(monitor2);
-
-        _isSeeded = true;
     }
     
     public List<Product> GetAll()
