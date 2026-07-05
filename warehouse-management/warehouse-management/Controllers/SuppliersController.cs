@@ -12,9 +12,9 @@ public class SuppliersController : ControllerBase
 {
     private  readonly FakeSupplierStore _store;
 
-    public SuppliersController()
+    public SuppliersController(FakeSupplierStore store)
     {
-        _store = new FakeSupplierStore();
+        _store = store;
     }
     
 // 1. Get all suppliers

@@ -7,12 +7,17 @@ namespace warehouse_management.Controllers;
 [ApiController]
 [Route("api/products")]
 public class ProductsController : ControllerBase
-{
+{       
+        
         private readonly FakeWarehouseStore _store;
+        // Add dependency in order to implement Task 2 (Product-Supplier Link)
+        private readonly FakeSupplierStore _supplierStore;
+        
 
-        public ProductsController()
+        public ProductsController(FakeWarehouseStore store, FakeSupplierStore supplierStore)
         {
-                _store = new FakeWarehouseStore();
+                _store = store;
+                _supplierStore = supplierStore;
         }
         
         // 1. Get all products 
@@ -140,9 +145,9 @@ public class ProductsController : ControllerBase
         // This one was difficult I had to use AI also caused many bugs that I tried to fix using AI and finally it works
         
         [HttpPost("{id}/image")]
-        public async Task<IActionResult> UploadImage([FromRoute] string? id, IFormFile? file)
+        public async Task<IActionResult> UploadImage([FromRoute] string id, IFormFile? file)
         {
-                var product = FakeWarehouseStore.DummyProducts.FirstOrDefault(p => p.Id == id);
+                var product = _store.GetById(id);
 
                 if (product is null)
                 {
@@ -190,7 +195,7 @@ public class ProductsController : ControllerBase
                 return Ok(productImage);
         }
         
-        // 8. Delete product 
+        // 8. Delete product : This is the soft delete by setting set IsArchived = true 
 
         [HttpDelete("{id}")]
         public IActionResult DeleteProduct([FromRoute] string id)
@@ -206,7 +211,6 @@ public class ProductsController : ControllerBase
         }
         
         // 9.  Get warehouse server time 
-        // I didnt really understand this one so i also had AI assitance 
 
         [HttpGet("server-time")]
 
@@ -225,6 +229,34 @@ public class ProductsController : ControllerBase
 
 
         }
+        
+        // 10. Assign Supplier to Product
+        [HttpPost("{id}/assign-supplier/{supplierId}")]
+        public IActionResult AssignSupplier([FromRoute] string id, [FromRoute] string supplierId)
+        {
+                if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(supplierId))
+                        return BadRequest("Product id and Supplier id are required");
+                
+                var product = _store.GetById(id);
+                if (product == null || product.IsArchived)
+                        return NotFound("Product not found.");
+                
+                var supplier = _supplierStore.GetSupplierById(supplierId);
+                if (supplier == null || !supplier.IsActive)
+                        return NotFound("Supplier not found.");
+                
+                // This is added to prevent redundant reassignment
+                if (product.SupplierName == supplier.Name)
+                        return BadRequest("Supplier already assigned to this product");
+                
+                product.SupplierName = supplier.Name;
+                product.LastUpdatedAt = DateTime.UtcNow;
+                
+                return Ok(product);
+
+        }
+        
+
 
 
 
