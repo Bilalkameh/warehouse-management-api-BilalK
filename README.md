@@ -38,6 +38,17 @@ The implementation can be found inside the warehouse-management folder:
 `FakeSupplierStore` -> In-memory supplier storage
 
 
+Refactoring (Controller-Service Pattern):
+project was refactored to follow a Controller-Service separation pattern as required by the lab instructions and reminded bi Ms Andrea
+At first the controllers contained both HTTP handling logic and business logic.
+This was improved by adding a Service layer:
+1- ProductService
+2- SupplierService
+
+This allows better separation of concerns and improves maintainability.
+
+
+
 To run:
 dotnet restore
 dotnet build
@@ -60,6 +71,7 @@ Endpoints:
  POST    /api/products/{id}/price -> Update price       (Also could have been PUT)
  POST    /api/products/{id}/image -> Upload product image   (Also could have been PUT)
  DELETE  /api/products/{id} -> Soft delete product
+ POST    //api/products/{id}/assign-supplier/{supplierId} -> Assign supplier to product
 
  - Suppliers:
  GET     /api/suppliers -> Get all suppliers
@@ -70,6 +82,6 @@ Endpoints:
 
 I also uploaded a file containing a few screenshots. I am unsure about the approach but I tried naming the screenshots what they are trying to showcase so it would be easier to understand what is going on.
 These screenshots can be found in the screenshots folder inside warehouse-management/warehouse-management.
-If this approach is bad or inneficient please inform a better way to do it for next time.
+
 
 
