@@ -10,6 +10,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<FakeWarehouseStore>();
 builder.Services.AddSingleton<FakeSupplierStore>();
 builder.Services.AddSingleton<ProductService>();
+builder.Services.AddSingleton<SupplierService>();       
 
 
 var app = builder.Build();
