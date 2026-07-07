@@ -1,33 +1,47 @@
 namespace Warehouse.Domain.Entities;
+
 public class Supplier
 {
-    public string Id { get; set; } = string.Empty;
-    
-    public string Name { get; set; } = string.Empty;
-    
-    public string Country { get; set; } = string.Empty;
-    
-    public string ContactEmail { get; set; } = string.Empty;
+    public Guid Id { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Country { get; private set; } = string.Empty;
+    public string ContactEmail { get; private set; } = string.Empty;
+    public string PhoneNumber { get; private set; } = string.Empty;
+    public bool IsActive { get; private set; }
 
-    public string PhoneNumber { get; set; } = string.Empty;
-    
-    public bool IsActive { get; set; } = true;
 
-    public Supplier(string id, string name, string country, string contactEmail, string phoneNumber)
+    public Supplier(
+        string name,
+        string country,
+        string contactEmail,
+        string phoneNumber)
     {
-        Id = id;
-        Name = name;
+        if (string.IsNullOrWhiteSpace(name))
+            throw new Exception("Supplier name is required.");
+
+        if (string.IsNullOrWhiteSpace(country))
+            throw new Exception("Supplier country is required.");
+
+        if (string.IsNullOrWhiteSpace(contactEmail))
+            throw new Exception("Supplier email is required.");
+
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            throw new Exception("Supplier phone number is required.");
+        
+        Id = Guid.NewGuid();
+        Name =name;
         Country = country;
         ContactEmail = contactEmail;
         PhoneNumber = phoneNumber;
         IsActive = true;
     }
 
-    public Supplier()
+
+
+    public void Deactivate()
     {
-        
+        if (!IsActive)
+            return;
+        IsActive = false;
     }
-
-
-
 }

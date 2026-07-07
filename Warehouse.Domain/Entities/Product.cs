@@ -1,44 +1,86 @@
 namespace Warehouse.Domain.Entities;
+
+
+// Product is a Domain entity
+//It contains business rules related to product state and behavior
+
 public class Product
 {
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string? SKU { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
+    public double Price { get; private set; }
+    public int QuantityInStock { get; private set; }
+    public string SupplierName { get; private set; } = string.Empty;
+    public DateTime ExpiryDate { get; private set; }
+    public bool IsArchived { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime LastUpdatedAt { get; private set; }
     
-    public string Name { get; set; } = string.Empty;
-    
-    
-    public string? SKU { get; set; } = string.Empty;
-    
-    public string Description { get; set; } = string.Empty;
-    
-    public double Price { get; set; }
-    
-    public int QuantityInStock { get; set; }
-
-    public string SupplierName { get; set; } = string.Empty;
-    public DateTime ExpiryDate { get; set; }
-    public bool IsArchived { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime LastUpdatedAt { get; set; }
-    
-    // Constructor with all the fields except CreatedAt and LastUpdated
-    // createdAt and lastUpdatedAt are assigned automatically using the current time of creation
-    // This avoids allowing dates that don't make sense and reflects the actual creation time of the product
-    public Product(string id, string name, string description, double price, int quantityInStock, string supplierName, DateTime expiryDate)
+    public Product(
+        string name,
+        string description,
+        double price,
+        int quantityInStock,
+        string supplierName,
+        DateTime expiryDate)
     {
-        this.Id = id;
-        this.Name = name;
-        this.Description = description;
-        this.Price = price;
-        this.QuantityInStock = quantityInStock;
-        this.SupplierName = supplierName;
-        this.ExpiryDate = expiryDate;
+        if (string.IsNullOrWhiteSpace(name))
+            throw new Exception("Product name is required.");
+
+        if (string.IsNullOrWhiteSpace(supplierName))
+            throw new Exception("Supplier name is required.");
+
+        if (price <= 0)
+            throw new Exception("Price must be greater than zero.");
+
+        if (quantityInStock < 0)
+            throw new Exception("Quantity cannot be negative.");
+        
+        Id = Guid.NewGuid();
+        Name = name;
+        Description = description;
+        Price = price;
+        QuantityInStock = quantityInStock;
+        SupplierName = supplierName;
+        ExpiryDate = expiryDate;
         CreatedAt = DateTime.UtcNow;
         LastUpdatedAt = DateTime.UtcNow;
     }
-    
-    //Added a default constructor with no parameters
-    public Product()
+	
+	// Price updates are handled here instead of Application/Controllers because the rules belong to the Product entity itself.
+
+    public void UpdatePrice(double newPrice)
     {
-        
+        if (IsArchived)
+            throw new Exception("Archived products cannot be updated.");
+
+        if (newPrice <= 0)
+            throw new Exception("Price must be greater than zero.");
+        Price = newPrice;
+        LastUpdatedAt = DateTime.UtcNow;
+    }
+
+	// Same with price it belongs to the Product entity
+    public void UpdateQuantity(int newQuantity)
+    {
+        if (IsArchived)
+            throw new Exception("Archived products cannot be updated.");
+        if (newQuantity < 0)
+            throw new Exception("Quantity cannot be negative.");
+
+
+        QuantityInStock = newQuantity;
+        LastUpdatedAt = DateTime.UtcNow;
+    }
+
+
+    public void Archive()
+    {
+        if (IsArchived)
+            return;
+        IsArchived = true;
+        LastUpdatedAt = DateTime.UtcNow;
     }
 }
