@@ -6,7 +6,7 @@ namespace Warehouse.Domain.Interfaces;
 public interface ISupplierRepository
 {
     List <Supplier> GetAll();
-    Supplier? GetById(string id);
+    Supplier? GetById(Guid id);
     void Add(Supplier  supplier);
     void Update(Supplier supplier);
 }

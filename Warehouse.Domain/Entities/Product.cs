@@ -8,7 +8,8 @@ public class Product
 {
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
-    public string? SKU { get; private set; } = string.Empty;
+// Changed SKU to required because the lab requires it
+    public string SKU { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public double Price { get; private set; }
     public int QuantityInStock { get; private set; }
@@ -18,17 +19,21 @@ public class Product
     public DateTime CreatedAt { get; private set; }
     public DateTime LastUpdatedAt { get; private set; }
     
-    public Product(
-        string name,
-        string description,
-        double price,
-        int quantityInStock,
-        string supplierName,
-        DateTime expiryDate)
+public Product(
+    string name,
+    string sku,
+    string description,
+    double price,
+    int quantityInStock,
+    string supplierName,
+    DateTime expiryDate)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new Exception("Product name is required.");
 
+		if (string.IsNullOrWhiteSpace(sku))
+    		throw new Exception("SKU is required.");
+        
         if (string.IsNullOrWhiteSpace(supplierName))
             throw new Exception("Supplier name is required.");
 
@@ -40,6 +45,7 @@ public class Product
         
         Id = Guid.NewGuid();
         Name = name;
+		SKU = sku;
         Description = description;
         Price = price;
         QuantityInStock = quantityInStock;
@@ -74,6 +80,22 @@ public class Product
         QuantityInStock = newQuantity;
         LastUpdatedAt = DateTime.UtcNow;
     }
+
+	public void AssignSupplier(Supplier supplier)
+	{
+    	if (IsArchived)
+        	throw new Exception("Archived products cannot be updated.");
+
+    	if (supplier == null)
+        	throw new ArgumentNullException(nameof(supplier));
+
+    	if (!supplier.IsActive)
+        	throw new Exception("Cannot assign inactive supplier.");
+
+    	SupplierName = supplier.Name;
+    	LastUpdatedAt = DateTime.UtcNow;
+	}
+
 
 
     public void Archive()

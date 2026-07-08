@@ -8,6 +8,8 @@ public class Supplier
     public string ContactEmail { get; private set; } = string.Empty;
     public string PhoneNumber { get; private set; } = string.Empty;
     public bool IsActive { get; private set; }
+	public DateTime CreatedAt { get; private set; }
+	public DateTime LastUpdatedAt { get; private set; }
 
 
     public Supplier(
@@ -34,14 +36,15 @@ public class Supplier
         ContactEmail = contactEmail;
         PhoneNumber = phoneNumber;
         IsActive = true;
+        CreatedAt = DateTime.UtcNow;
+		LastUpdatedAt = DateTime.UtcNow;
     }
-
-
 
     public void Deactivate()
     {
         if (!IsActive)
             return;
         IsActive = false;
+LastUpdatedAt = DateTime.UtcNow;
     }
 }
