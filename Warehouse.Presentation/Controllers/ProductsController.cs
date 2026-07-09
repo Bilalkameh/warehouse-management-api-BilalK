@@ -1,59 +1,38 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Warehouse.Application.Commands.Products;
-using Warehouse.Application.Handlers.Products;
-using Warehouse.Application.Queries.Products;
-using Warehouse.Domain.Entities;
-
+using Warehouse.Application.Commands.Products.AddProductImage;
+using Warehouse.Application.Commands.Products.ArchiveProduct;
+using Warehouse.Application.Commands.Products.AssignSupplier;
+using Warehouse.Application.Commands.Products.CreateProduct;
+using Warehouse.Application.Commands.Products.UpdateProductPrice;
+using Warehouse.Application.Commands.Products.UpdateProductQuantity;
+using Warehouse.Application.Queries.Products.GetProductById;
+using Warehouse.Application.Queries.Products.GetProducts;
+using Warehouse.Application.Queries.Products.SearchProducts;
 namespace Warehouse.Presentation.Controllers;
 
 [ApiController]
 [Route("api/products")]
 public class ProductsController : ControllerBase
 {
-    private readonly GetProductsHandler _getProductsHandler;
-    private readonly GetProductByIdHandler _getProductByIdHandler;
-    private readonly SearchProductsHandler _searchProductsHandler;
-    private readonly CreateProductHandler _createProductHandler;
-    private readonly UpdateProductQuantityHandler _updateQuantityHandler;
-    private readonly UpdateProductPriceHandler _updatePriceHandler;
-    private readonly ArchiveProductHandler _archiveProductHandler;
-    private readonly AssignSupplierHandler _assignSupplierHandler;
-    private readonly AddProductImageHandler _addProductImageHandler;
+    private readonly IMediator _mediator;
 
-
-    public ProductsController(
-        GetProductsHandler getProductsHandler,
-        GetProductByIdHandler getProductByIdHandler,
-        SearchProductsHandler searchProductsHandler,
-        CreateProductHandler createProductHandler,
-        UpdateProductQuantityHandler updateQuantityHandler,
-        UpdateProductPriceHandler updatePriceHandler,
-        ArchiveProductHandler archiveProductHandler,
-        AssignSupplierHandler assignSupplierHandler,
-        AddProductImageHandler addProductImageHandler)
+    public ProductsController(IMediator mediator)
+    
     {
-        _getProductsHandler = getProductsHandler;
-        _getProductByIdHandler = getProductByIdHandler;
-        _searchProductsHandler = searchProductsHandler;
-        _createProductHandler = createProductHandler;
-        _updateQuantityHandler = updateQuantityHandler;
-        _updatePriceHandler = updatePriceHandler;
-        _archiveProductHandler = archiveProductHandler;
-        _assignSupplierHandler = assignSupplierHandler;
-        _addProductImageHandler = addProductImageHandler;
+        _mediator = mediator;   
     }
 
 
     // 1. Get all products
     [HttpGet]
-    public IActionResult GetAllProducts([FromQuery] bool onlyAvailable = false)
+    public async Task<IActionResult> GetAllProducts([FromQuery] bool onlyAvailable = false)
     {
-        var query = new GetProductsQuery
+        var request = new GetProductsRequest
         {
             OnlyAvailable = onlyAvailable
         };
-
-        var products = _getProductsHandler.Handle(query);
+        var products = await _mediator.Send(request);
 
         return Ok(products);
     }
@@ -61,15 +40,13 @@ public class ProductsController : ControllerBase
 
     // 2. Get product by id
     [HttpGet("{id}")]
-    public IActionResult GetProductById([FromRoute] Guid id)
+    public async Task<IActionResult> GetProductById([FromRoute] Guid id)
     {
-        var query = new GetProductByIdQuery
+        var request = new GetProductByIdRequest
         {
             ProductId = id
         };
-
-        var product = _getProductByIdHandler.Handle(query);
-
+        var product = await _mediator.Send(request);
         if (product == null)
             return NotFound("Product not found");
 
@@ -79,28 +56,24 @@ public class ProductsController : ControllerBase
 
     // 3. Search products
     [HttpGet("search")]
-    public IActionResult SearchProducts(
-        [FromQuery] string? name,
-        [FromQuery] string? supplier)
+    public async Task<IActionResult> SearchProducts([FromQuery] string? name, [FromQuery] string? supplier)
     {
-        var query = new SearchProductsQuery
+        var request = new SearchProductsRequest
         {
             Name = name,
             SupplierName = supplier
         };
-
-        var products = _searchProductsHandler.Handle(query);
-
+        var products = await _mediator.Send(request);
+        
         return Ok(products);
     }
 
 
     // 4. Create product
     [HttpPost]
-    public IActionResult CreateProduct(
-        [FromBody] CreateProductCommand command)
+    public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
     {
-        var product = _createProductHandler.Handle(command);
+        var product = await _mediator.Send(request);
 
         return CreatedAtAction(
             nameof(GetProductById),
@@ -111,19 +84,19 @@ public class ProductsController : ControllerBase
 
     // 5. Update quantity
     [HttpPost("{id}/quantity")]
-    public IActionResult UpdateQuantity(
+    public async Task<IActionResult> UpdateQuantity(
         [FromRoute] Guid id,
         [FromBody] int quantity)
     {
-        var command = new UpdateProductQuantityCommand
+        var request = new UpdateProductQuantityRequest
         {
             ProductId = id,
             Quantity = quantity
         };
 
-        var result = _updateQuantityHandler.Handle(command);
+        var result = await _mediator.Send(request);
 
-        if (!result)
+        if (!result.Success)
             return BadRequest("Invalid product or quantity");
 
         return Ok();
@@ -132,19 +105,19 @@ public class ProductsController : ControllerBase
 
     // 6. Update price
     [HttpPost("{id}/price")]
-    public IActionResult UpdatePrice(
+    public async Task<IActionResult> UpdatePrice(
         [FromRoute] Guid id,
         [FromBody] double price)
     {
-        var command = new UpdateProductPriceCommand
+        var request = new UpdateProductPriceRequest
         {
             ProductId = id,
             Price = price
         };
 
-        var result = _updatePriceHandler.Handle(command);
+        var result = await _mediator.Send(request);
 
-        if (!result)
+        if (!result.Success)
             return BadRequest("Invalid product or price");
 
         return Ok();
@@ -153,17 +126,17 @@ public class ProductsController : ControllerBase
 
     // 7. Delete product (soft delete)
     [HttpDelete("{id}")]
-    public IActionResult DeleteProduct(
+    public async Task<IActionResult> DeleteProduct(
         [FromRoute] Guid id)
     {
-        var command = new ArchiveProductCommand
+        var request = new ArchiveProductRequest
         {
             ProductId = id
         };
 
-        var result = _archiveProductHandler.Handle(command);
+        var result = await _mediator.Send(request);
 
-        if (!result)
+        if (!result.Success)
             return NotFound("Product not found");
 
         return Ok();
@@ -171,28 +144,23 @@ public class ProductsController : ControllerBase
     
     // 8. Upload image
     [HttpPost("{id}/image")]
-    public IActionResult UploadImage(
+    public async Task<IActionResult> UploadImage(
         [FromRoute] Guid id,
         IFormFile? file)
     {
-        if(file == null || file.Length == 0)
+        if (file == null || file.Length == 0)
             return BadRequest("No file was uploaded.");
 
-
-        var command = new AddProductImageCommand
+        var request = new AddProductImageRequest
         {
             ProductId = id,
             FileName = file.FileName,
             FilePath = $"uploads/{file.FileName}"
         };
 
-
-        var result = _addProductImageHandler.Handle(command);
-
-
-        if(result == null)
+        var result = await _mediator.Send(request);
+        if (!result.Success)
             return BadRequest("Invalid product or file.");
-
 
         return Ok(result);
     }
@@ -221,19 +189,18 @@ public class ProductsController : ControllerBase
 
     // 10. Assign supplier
     [HttpPost("{id}/assign-supplier/{supplierId}")]
-    public IActionResult AssignSupplier(
+    public async Task<IActionResult> AssignSupplier(
         [FromRoute] Guid id,
         [FromRoute] Guid supplierId)
     {
-        var command = new AssignSupplierCommand
+        var request = new AssignSupplierRequest
         {
             ProductId = id,
             SupplierId = supplierId
         };
 
-        var result = _assignSupplierHandler.Handle(command);
-
-        if (!result)
+        var result = await _mediator.Send(request);
+        if (!result.Success)
             return BadRequest("Invalid product or supplier");
 
         return Ok();

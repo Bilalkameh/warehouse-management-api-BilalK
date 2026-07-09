@@ -1,8 +1,9 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Warehouse.Application.Commands.Suppliers;
-using Warehouse.Application.Handlers.Suppliers;
-using Warehouse.Application.Queries.Suppliers;
-using Warehouse.Domain.Entities;
+using Warehouse.Application.Commands.Suppliers.CreateSupplier;
+using Warehouse.Application.Commands.Suppliers.DeactivateSupplier;
+using Warehouse.Application.Queries.Suppliers.GetSupplierById;
+using Warehouse.Application.Queries.Suppliers.GetSuppliers;
 
 namespace Warehouse.Presentation.Controllers;
 
@@ -10,32 +11,20 @@ namespace Warehouse.Presentation.Controllers;
 [Route("api/suppliers")]
 public class SuppliersController : ControllerBase
 {
-    private readonly GetSuppliersHandler _getSuppliersHandler;
-    private readonly GetSupplierByIdHandler _getSupplierByIdHandler;
-    private readonly CreateSupplierHandler _createSupplierHandler;
-    private readonly DeactivateSupplierHandler _deactivateSupplierHandler;
+    private readonly IMediator _mediator;
 
-
-    public SuppliersController(
-        GetSuppliersHandler getSuppliersHandler,
-        GetSupplierByIdHandler getSupplierByIdHandler,
-        CreateSupplierHandler createSupplierHandler,
-        DeactivateSupplierHandler deactivateSupplierHandler)
+    public SuppliersController(IMediator mediator)
     {
-        _getSuppliersHandler = getSuppliersHandler;
-        _getSupplierByIdHandler = getSupplierByIdHandler;
-        _createSupplierHandler = createSupplierHandler;
-        _deactivateSupplierHandler = deactivateSupplierHandler;
+        _mediator = mediator;
     }
 
 
     // 1. Get all suppliers
     [HttpGet]
-    public IActionResult GetAllSuppliers()
+    public async Task<IActionResult> GetAllSuppliers()
     {
-        var query = new GetSuppliersQuery();
-
-        var suppliers = _getSuppliersHandler.Handle(query);
+        var request = new GetSuppliersRequest();
+        var suppliers = await _mediator.Send(request);
 
         return Ok(suppliers);
     }
@@ -43,15 +32,14 @@ public class SuppliersController : ControllerBase
 
     // 2. Get supplier by id
     [HttpGet("{id}")]
-    public IActionResult GetSupplierById([FromRoute] Guid id)
+    public async Task<IActionResult> GetSupplierById([FromRoute] Guid id)
     {
-        var query = new GetSupplierByIdQuery
+        var request = new GetSupplierByIdRequest
         {
             SupplierId = id
         };
 
-        var supplier = _getSupplierByIdHandler.Handle(query);
-
+        var supplier = await _mediator.Send(request);
         if (supplier == null)
             return NotFound("Supplier not found.");
 
@@ -59,11 +47,12 @@ public class SuppliersController : ControllerBase
     }
 
 
+
     // 3. Create supplier
     [HttpPost]
-    public IActionResult CreateSupplier([FromBody] CreateSupplierCommand command)
+    public async Task<IActionResult> CreateSupplier([FromBody] CreateSupplierRequest request)
     {
-        var supplier = _createSupplierHandler.Handle(command);
+        var supplier = await _mediator.Send(request);
 
         return CreatedAtAction(
             nameof(GetSupplierById),
@@ -73,15 +62,15 @@ public class SuppliersController : ControllerBase
     
     // 4. Deactivate supplier
     [HttpDelete("{id}")]
-    public IActionResult DeactivateSupplier([FromRoute] Guid id)
+    public async Task<IActionResult> DeactivateSupplier([FromRoute] Guid id)
     {
-        var command = new DeactivateSupplierCommand
+        var request = new DeactivateSupplierRequest
         {
             SupplierId = id
         };
-        var result = _deactivateSupplierHandler.Handle(command);
 
-        if (!result)
+        var result = await _mediator.Send(request);
+        if (!result.Success)
             return NotFound("Supplier not found.");
 
         return Ok();
