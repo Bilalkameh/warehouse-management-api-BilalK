@@ -92,9 +92,8 @@ Implemented entities:
 - WarehouseItem
 
 Note:
-`StockMovement` and `WarehouseItem` were added as part of the required domain structure. 
+StockMovement and WarehouseItem were added as part of the required domain structure. 
 However, they are currently incomplete because the existing API requirements from previous sessions did not include stock movement tracking or warehouse item management functionality.
-Also I am unsure exactly what to place inside them
 They are prepared as future domain entities and can be extended when those modules are implemented.
 
 Implemented business rules:
@@ -112,26 +111,44 @@ Repository contracts are also in this layer:
 
 
 ### Warehouse.Application
-Contains application use cases and separates commands from queries using a CQRS organization.
+Contains application use cases and separates commands from queries using CQRS with MediatR.
 
-Implemented commands:
+The Application layer is organized with Commands and Queries as the top-level folders.
+Inside each one, use cases are grouped by entity/functionality and then by use case.
+
+Example structure:
+- Commands/Products/CreateProduct
+  - CreateProductRequest.cs
+  - CreateProductResponse.cs
+  - CreateProductHandler.cs
+
+Implemented product commands:
 - CreateProduct
 - UpdateProductQuantity
 - UpdateProductPrice
 - ArchiveProduct
 - AssignSupplierToProduct
-- CreateSupplier
-- DeactivateSupplier
 - AddProductImage
 
-Implemented queries:
+Implemented supplier commands:
+- CreateSupplier
+- DeactivateSupplier
+
+Implemented product queries:
 - GetProductById
 - ListProducts
 - SearchProducts
+
+Implemented supplier queries:
 - GetSupplierById
 - ListSuppliers
 
-Also Added all the appropriate handlers split into separate Products and Suppliers folders for a cleaner organisation.
+Each use case contains:
+- Request
+- Response
+- Handler
+
+MediatR is used to send requests from the controllers to the correct handlers.
 
 
 ### Warehouse.Infrastructure
@@ -142,32 +159,28 @@ Implemented repositories:
 - FakeSupplierRepository
 - FakeProductImageRepository
 
-These are implementation of the repository interfacer from the Domain layer.
+These are implementations of the repository interfaces from the Domain layer.
 They continue using in-memory storage while hiding the storage details from the Application and Domain layers.
 
-Note:
-- The lab mentions MediatR as a harder requirement for implementing CQRS. 
-- MediatR was not used in this refactor because the current command/query is already achieved in the application layer. 
-- It will certainly be added in future 
 
 ### Warehouse.Presentation
 Contains the API layer.
 
 Controllers were refactored to become thin controllers:
 - Receive HTTP requests
-- Create commands/queries
-- Call application handlers
+- Create requests
+- Send requests using MediatR
 - Return HTTP responses
 
 All the endpoints from session-02 still exist and are working and testable.
-There is zero business logic or storage access in the controllers.
+There is no business logic or storage access in the controllers.
 
 
 # Design Patterns and Concepts Used
 1- Domain-Driven Design (DDD)
 2- Repository Pattern
 3- Dependency Injection
-4- CQRS-style Organization
+4- CQRS with MediatR
 
 
 # Run instructions
@@ -175,9 +188,8 @@ dotnet restore
 dotnet build
 dotnet run --project Warehouse.Presentation
 
-Then open: http://localhost:5035/swagger
+Then open localhost:5035
 
 
 # Screenshots
 Swagger screenshots showing the refactored API behavior will be included in the Pull Request.
-
