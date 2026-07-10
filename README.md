@@ -45,19 +45,6 @@ This was improved by adding a Service layer:
 1- ProductService
 2- SupplierService
 
-This allows better separation of concerns and improves maintainability.
-
-
-
-To run:
-dotnet restore
-dotnet build
-dotnet run
-Then open: https://localhost:<port>/swagger
-After this all endpoints can be tested 
-
-to run these the path should be :
-warehouse-management-api-BilalK\warehouse-management\warehouse-management>
 
 
 Endpoints:
@@ -79,9 +66,130 @@ Endpoints:
  POST    /api/suppliers -> Create supplier
  DELETE  /api/suppliers/{id} -> Deactivate supplier
 
+----------------------------------------------------------------------------------------
 
-I also uploaded a file containing a few screenshots. I am unsure about the approach but I tried naming the screenshots what they are trying to showcase so it would be easier to understand what is going on.
-These screenshots can be found in the screenshots folder inside warehouse-management/warehouse-management.
+(Session-03) Refactoring Warehouse API using DDD Architecture
+
+In this session, the existing Warehouse Management API was refactored from a Controller-Service architecture 
+into an architecture following Domain-Driven Design (DDD) principles.
+
+The goal of this refactor was to separate business rules, application logic, data access, 
+and HTTP handling while keeping the existing API behavior unchanged.
+
+# Features
+### Architecture Layers
+The project was reorganized into four main layers:
 
 
+### Warehouse.Domain
+Responsible for core business logic and domain models.
 
+Implemented entities:
+- Product
+- Supplier
+- ProductImage
+- StockMovement
+- WarehouseItem
+
+Note:
+StockMovement and WarehouseItem were added as part of the required domain structure. 
+However, they are currently incomplete because the existing API requirements from previous sessions did not include stock movement tracking or warehouse item management functionality.
+They are prepared as future domain entities and can be extended when those modules are implemented.
+
+Implemented business rules:
+- Product name is required
+- SKU is required
+- Price must be greater than zero
+- Quantity cannot be negative
+- Archived products cannot be updated
+- Inactive suppliers cannot be assigned to products
+
+Repository contracts are also in this layer:
+- IProductRepository
+- ISupplierRepository
+- IProductImageRepository
+
+
+### Warehouse.Application
+Contains application use cases and separates commands from queries using CQRS with MediatR.
+
+The Application layer is organized with Commands and Queries as the top-level folders.
+Inside each one, use cases are grouped by entity/functionality and then by use case.
+
+Example structure:
+- Commands/Products/CreateProduct
+  - CreateProductRequest.cs
+  - CreateProductResponse.cs
+  - CreateProductHandler.cs
+
+Implemented product commands:
+- CreateProduct
+- UpdateProductQuantity
+- UpdateProductPrice
+- ArchiveProduct
+- AssignSupplierToProduct
+- AddProductImage
+
+Implemented supplier commands:
+- CreateSupplier
+- DeactivateSupplier
+
+Implemented product queries:
+- GetProductById
+- ListProducts
+- SearchProducts
+
+Implemented supplier queries:
+- GetSupplierById
+- ListSuppliers
+
+Each use case contains:
+- Request
+- Response
+- Handler
+
+MediatR is used to send requests from the controllers to the correct handlers.
+
+
+### Warehouse.Infrastructure
+Responsible for data access implementation.
+
+Implemented repositories:
+- FakeProductRepository
+- FakeSupplierRepository
+- FakeProductImageRepository
+
+These are implementations of the repository interfaces from the Domain layer.
+They continue using in-memory storage while hiding the storage details from the Application and Domain layers.
+
+
+### Warehouse.Presentation
+Contains the API layer.
+
+Controllers were refactored to become thin controllers:
+- Receive HTTP requests
+- Create requests
+- Send requests using MediatR
+- Return HTTP responses
+
+All the endpoints from session-02 still exist and are working and testable.
+There is no business logic or storage access in the controllers.
+
+
+# Design Patterns and Concepts Used
+1- Domain-Driven Design (DDD)
+2- Repository Pattern
+3- Dependency Injection
+4- CQRS with MediatR
+
+
+# Run instructions
+dotnet restore
+dotnet build
+dotnet run --project Warehouse.Presentation
+
+Then open localhost:5035
+
+
+# Screenshots
+Swagger screenshots showing the refactored API behavior will be included in the Pull Request.

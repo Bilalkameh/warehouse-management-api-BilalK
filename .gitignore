@@ -57,3 +57,18 @@ yarn-error.log*
 build/
 dist/
 out/
+
+# ==========================================
+# 5. .NET / ASP.NET GENERATED FILES
+# ==========================================
+bin/
+obj/
+.vs/
+
+TestResults/
+*.trx
+coverage/
+*.coverage
+
+wwwroot/uploads/
+appsettings.Development.json
