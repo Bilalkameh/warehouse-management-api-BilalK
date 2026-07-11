@@ -9,7 +9,7 @@ public class Product
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
 // Changed SKU to required because the lab requires it
-    public string Sku { get; private set; } = string.Empty;
+    public string SKU { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public double Price { get; private set; }
     public int QuantityInStock { get; private set; }
@@ -48,7 +48,7 @@ public Product(
         
         Id = Guid.NewGuid();
         Name = name;
-		Sku = sku;
+		SKU = sku;
         Description = description;
         Price = price;
         QuantityInStock = quantityInStock;

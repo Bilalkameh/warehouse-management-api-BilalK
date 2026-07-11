@@ -4,6 +4,7 @@ public class ProductImage
 {
     public Guid Id { get; private set; }
     public Guid ProductId { get; private set; }
+    public Product? Product { get; private set; }
     public string FileName { get; private set; } = string.Empty;
     public string FilePath { get; private set; } = string.Empty;
 
