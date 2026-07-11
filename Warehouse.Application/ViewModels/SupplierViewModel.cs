@@ -1,6 +1,6 @@
-namespace Warehouse.Application.Commands.Suppliers.CreateSupplier;
+namespace Warehouse.Application.ViewModels;
 
-public class CreateSupplierResponse
+public class SupplierViewModel
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

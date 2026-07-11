@@ -1,23 +1,29 @@
+using AutoMapper;
 using MediatR;
+using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Entities;
 using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Commands.Products.CreateProduct;
 
-public class CreateProductHandler : IRequestHandler<CreateProductRequest, CreateProductResponse>
+public class CreateProductHandler
+    : IRequestHandler<CreateProductRequest, ProductViewModel>
 {
     private readonly IProductRepository _productRepository;
     private readonly ISupplierRepository _supplierRepository;
+    private readonly IMapper _mapper;
 
     public CreateProductHandler(
         IProductRepository productRepository,
-        ISupplierRepository supplierRepository)
+        ISupplierRepository supplierRepository,
+        IMapper mapper)
     {
         _productRepository = productRepository;
         _supplierRepository = supplierRepository;
+        _mapper = mapper;
     }
 
-    public Task<CreateProductResponse> Handle(
+    public Task<ProductViewModel> Handle(
         CreateProductRequest request,
         CancellationToken cancellationToken)
     {
@@ -41,22 +47,8 @@ public class CreateProductHandler : IRequestHandler<CreateProductRequest, Create
             request.ExpiryDate);
 
         _productRepository.Add(product);
+        var viewModel = _mapper.Map<ProductViewModel>(product);
 
-        var response = new CreateProductResponse
-        {
-            Id = product.Id,
-            Name = product.Name,
-            SKU = product.SKU,
-            Description = product.Description,
-            Price = product.Price,
-            QuantityInStock = product.QuantityInStock,
-            SupplierName = supplier.Name,
-            ExpiryDate = product.ExpiryDate,
-            IsArchived = product.IsArchived,
-            CreatedAt = product.CreatedAt,
-            LastUpdatedAt = product.LastUpdatedAt
-        };
-
-        return Task.FromResult(response);
+        return Task.FromResult(viewModel);
     }
 }

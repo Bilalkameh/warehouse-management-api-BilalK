@@ -1,42 +1,35 @@
+using AutoMapper;
 using MediatR;
+using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Queries.Products.SearchProducts;
 
-public class SearchProductsHandler : IRequestHandler<SearchProductsRequest, List<SearchProductsResponse>>
+public class SearchProductsHandler
+    : IRequestHandler<SearchProductsRequest, List<ProductViewModel>>
 {
     private readonly IProductRepository _repository;
-    
-    public SearchProductsHandler(IProductRepository repository)
+    private readonly IMapper _mapper;
+
+    public SearchProductsHandler(
+        IProductRepository repository,
+        IMapper mapper)
     {
         _repository = repository;
+        _mapper = mapper;
     }
 
-    public Task<List<SearchProductsResponse>> Handle(SearchProductsRequest request, CancellationToken cancellationToken)
+    public Task<List<ProductViewModel>> Handle(
+        SearchProductsRequest request,
+        CancellationToken cancellationToken)
     {
-        var products = _repository.Search(request.Name, request.SupplierName);
+        var products = _repository.Search(
+            request.Name,
+            request.SupplierName);
+        
+        var viewModels =
+            _mapper.Map<List<ProductViewModel>>(products);
 
-        var response = new List<SearchProductsResponse>();
-
-        foreach (var product in products)
-        {
-            response.Add(new SearchProductsResponse
-            {
-                Id = product.Id,
-                Name = product.Name,
-                SKU = product.SKU,
-                Description = product.Description,
-                Price = product.Price,
-                QuantityInStock = product.QuantityInStock,
-                SupplierName = product.Supplier?.Name ?? string.Empty,
-                ExpiryDate = product.ExpiryDate,
-                IsArchived = product.IsArchived,
-                CreatedAt = product.CreatedAt,
-                LastUpdatedAt = product.LastUpdatedAt
-            });
-        }
-
-        return Task.FromResult(response);
+        return Task.FromResult(viewModels);
     }
-
 }

@@ -2,6 +2,7 @@ using Warehouse.Application.Commands.Products.CreateProduct;
 using Warehouse.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Warehouse.Infrastructure.Persistence;
+using Warehouse.Application.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,9 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddAutoMapper(
+    configuration => { }, typeof(MappingProfile));
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();

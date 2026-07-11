@@ -1,37 +1,33 @@
+using AutoMapper;
 using MediatR;
+using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Queries.Suppliers.GetSuppliers;
 
-public class GetSuppliersHandler : IRequestHandler<GetSuppliersRequest, List<GetSuppliersResponse>>
+public class GetSuppliersHandler
+    : IRequestHandler<GetSuppliersRequest, List<SupplierViewModel>>
 {
     private readonly ISupplierRepository _repository;
-    
-    public GetSuppliersHandler(ISupplierRepository repository)
+    private readonly IMapper _mapper;
+
+    public GetSuppliersHandler(
+        ISupplierRepository repository,
+        IMapper mapper)
     {
         _repository = repository;
+        _mapper = mapper;
     }
 
-    public Task<List<GetSuppliersResponse>> Handle(GetSuppliersRequest request, CancellationToken cancellationToken)
+    public Task<List<SupplierViewModel>> Handle(
+        GetSuppliersRequest request,
+        CancellationToken cancellationToken)
     {
         var suppliers = _repository.GetAll();
 
-        var response = new List<GetSuppliersResponse>();
+        var viewModels =
+            _mapper.Map<List<SupplierViewModel>>(suppliers);
 
-        foreach (var supplier in suppliers)
-        {
-            var item = new GetSuppliersResponse();
-            item.Id = supplier.SupplierId;
-            item.Name = supplier.Name;
-            item.Country = supplier.Country;
-            item.ContactEmail = supplier.ContactEmail;
-            item.PhoneNumber = supplier.PhoneNumber;
-            item.IsActive = supplier.IsActive;
-
-            response.Add(item);
-        }
-
-        return Task.FromResult(response);
+        return Task.FromResult(viewModels);
     }
-
 }
