@@ -19,7 +19,8 @@ public class UpdateProductPriceHandler : IRequestHandler<UpdateProductPriceReque
         {
             return Task.FromResult(new UpdateProductPriceResponse { Success = false });
         }
-        product.UpdatePrice(request.Price);
+        product.Price = request.Price;
+        product.LastUpdatedAt = DateTime.UtcNow;
         _repository.Update(product);
         
         return Task.FromResult(new UpdateProductPriceResponse { Success = true });

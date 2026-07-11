@@ -25,11 +25,11 @@ public class GetProductByIdHandler : IRequestHandler<GetProductByIdRequest, GetP
         {
             Id = product.Id,
             Name = product.Name,
-            SKU = product.SKU,
+            SKU = product.Sku,
             Description = product.Description,
             Price = product.Price,
             QuantityInStock = product.QuantityInStock,
-            SupplierName = product.SupplierName,
+            SupplierName = product.Supplier.Name,
             ExpiryDate = product.ExpiryDate,
             IsArchived = product.IsArchived,
             CreatedAt = product.CreatedAt,

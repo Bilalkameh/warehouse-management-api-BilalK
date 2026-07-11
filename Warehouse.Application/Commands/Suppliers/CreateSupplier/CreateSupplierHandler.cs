@@ -15,11 +15,17 @@ public class CreateSupplierHandler : IRequestHandler<CreateSupplierRequest, Crea
 
     public Task<CreateSupplierResponse> Handle(CreateSupplierRequest request, CancellationToken cancellationToken)
     {
-        var supplier = new Supplier(request.Name,
-            request.Country,
-            request.ContactEmail,
-            request.PhoneNumber
-        );
+        var supplier = new Supplier
+        {
+            Id = Guid.NewGuid(),
+            Name = request.Name,
+            Country = request.Country,
+            ContactEmail = request.ContactEmail,
+            PhoneNumber = request.PhoneNumber,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            LastUpdatedAt = DateTime.UtcNow
+        };
 
         _repository.Add(supplier);
 

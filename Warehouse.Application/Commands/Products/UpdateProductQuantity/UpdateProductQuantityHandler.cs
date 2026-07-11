@@ -19,7 +19,8 @@ public class UpdateProductQuantityHandler : IRequestHandler<UpdateProductQuantit
         {
             return Task.FromResult(new UpdateProductQuantityResponse { Success = false });
         }
-        product.UpdateQuantity(request.Quantity);
+        product.QuantityInStock = request.Quantity;
+        product.LastUpdatedAt = DateTime.UtcNow;
         _repository.Update(product);
 
         return Task.FromResult(new UpdateProductQuantityResponse { Success = true });

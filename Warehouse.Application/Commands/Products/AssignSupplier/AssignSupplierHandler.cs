@@ -35,7 +35,9 @@ public class AssignSupplierHandler : IRequestHandler<AssignSupplierRequest, Assi
             return Task.FromResult(failedResponse);
         }
 
-        product.AssignSupplier(supplier);
+        product.SupplierId = supplier.Id;
+        product.Supplier = supplier;
+        product.LastUpdatedAt = DateTime.UtcNow;
         _productRepository.Update(product);
         var response = new AssignSupplierResponse();
         response.Success = true;

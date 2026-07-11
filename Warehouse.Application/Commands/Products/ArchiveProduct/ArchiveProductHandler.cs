@@ -20,7 +20,8 @@ public class ArchiveProductHandler : IRequestHandler<ArchiveProductRequest, Arch
         {
             return Task.FromResult(new ArchiveProductResponse { Success = false });
         }
-        product.Archive();
+        product.IsArchived = true;
+        product.LastUpdatedAt = DateTime.UtcNow;
         _repository.Update(product);
 
         return Task.FromResult(new ArchiveProductResponse { Success = true });

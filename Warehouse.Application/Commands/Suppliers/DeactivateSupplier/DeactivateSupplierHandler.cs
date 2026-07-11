@@ -24,7 +24,8 @@ public class DeactivateSupplierHandler : IRequestHandler<DeactivateSupplierReque
             return Task.FromResult(failedResponse);
         }
 
-        supplier.Deactivate();
+        supplier.IsActive = false;
+        supplier.LastUpdatedAt = DateTime.UtcNow;
         _repository.Update(supplier);
 
         var response = new DeactivateSupplierResponse();

@@ -8,14 +8,18 @@ public class AddProductImageHandler : IRequestHandler<AddProductImageRequest, Ad
 {
     private readonly IProductRepository _productRepository;
     private readonly IProductImageRepository _imageRepository;
-    
-    public AddProductImageHandler(IProductRepository productRepository, IProductImageRepository imageRepository)
+
+    public AddProductImageHandler(
+        IProductRepository productRepository,
+        IProductImageRepository imageRepository)
     {
         _productRepository = productRepository;
         _imageRepository = imageRepository;
     }
 
-    public Task<AddProductImageResponse> Handle(AddProductImageRequest request, CancellationToken cancellationToken)
+    public Task<AddProductImageResponse> Handle(
+        AddProductImageRequest request,
+        CancellationToken cancellationToken)
     {
         var product = _productRepository.GetById(request.ProductId);
 
@@ -27,15 +31,19 @@ public class AddProductImageHandler : IRequestHandler<AddProductImageRequest, Ad
             return Task.FromResult(failedResponse);
         }
 
-        var image = new ProductImage(request.ProductId, request.FileName, request.FilePath);
+        var image = new ProductImage
+        {
+            Id = Guid.NewGuid(),
+            ProductId = request.ProductId,
+            FileName = request.FileName,
+            FilePath = request.FilePath
+        };
 
         _imageRepository.Add(image);
-
         var response = new AddProductImageResponse();
         response.Id = image.Id;
         response.Success = true;
 
         return Task.FromResult(response);
     }
-
 }
