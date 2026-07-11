@@ -9,6 +9,11 @@ using Warehouse.Application.Commands.Products.UpdateProductQuantity;
 using Warehouse.Application.Queries.Products.GetProductById;
 using Warehouse.Application.Queries.Products.GetProducts;
 using Warehouse.Application.Queries.Products.SearchProducts;
+using Warehouse.Application.Queries.Products.GetPagedProducts;
+using Warehouse.Application.Queries.Products.GetProductsBySupplier;
+using Warehouse.Application.Queries.Products.GetTotalProductCount;
+using Warehouse.Application.Queries.Products.GroupProductsByExpiryYear;
+using Warehouse.Application.Queries.Products.GroupProductsByExpiryYearAndCountry;
 namespace Warehouse.Presentation.Controllers;
 
 [ApiController]
@@ -205,5 +210,75 @@ public class ProductsController : ControllerBase
 
         return Ok();
     }
+    
+    // 11. Get products by supplier
+    [HttpGet("by-supplier")]
+    public async Task<IActionResult> GetProductsBySupplier(
+        [FromQuery] string supplierName,
+        [FromQuery] bool ascending = true)
+    {
+        var request = new GetProductsBySupplierRequest
+        {
+            SupplierName = supplierName,
+            Ascending = ascending
+        };
+        var products = await _mediator.Send(request);
+
+        return Ok(products);
+    }
+    
+    // 12. Group products by expiry year
+    [HttpGet("group-by-expiry-year")]
+    public async Task<IActionResult> GroupProductsByExpiryYear()
+    {
+        var request = new GroupProductsByExpiryYearRequest();
+        var result = await _mediator.Send(request);
+
+        return Ok(result);
+    }
+    
+    
+    // 13. Group products by expiry year and supplier country
+    [HttpGet("group-by-expiry-year-and-country")]
+    public async Task<IActionResult> GroupProductsByExpiryYearAndCountry()
+    {
+        var request = new GroupProductsByExpiryYearAndCountryRequest();
+        var result = await _mediator.Send(request);
+
+        return Ok(result);
+    }
+    
+    // 14. Get total product count
+    [HttpGet("count")]
+    public async Task<IActionResult> GetTotalProductCount()
+    {
+        var request = new GetTotalProductCountRequest();
+        var result = await _mediator.Send(request);
+
+        return Ok(result);
+    }
+    
+    // 15. Get paged products
+    [HttpGet("paged")]
+    public async Task<IActionResult> GetPagedProducts(
+        [FromQuery] int pageSize,
+        [FromQuery] int pageNumber)
+    {
+        if (pageSize <= 0 || pageNumber <= 0)
+            return BadRequest("Page size and page number must be greater than zero.");
+
+        var request = new GetPagedProductsRequest
+        {
+            PageSize = pageSize,
+            PageNumber = pageNumber
+        };
+        var products = await _mediator.Send(request);
+
+        return Ok(products);
+    }
+    
+    
+    
+    
     
 }
