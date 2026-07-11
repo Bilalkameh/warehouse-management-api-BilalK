@@ -21,7 +21,7 @@ public class GetSupplierByIdHandler : IRequestHandler<GetSupplierByIdRequest, Ge
         }
 
         var response = new GetSupplierByIdResponse();
-        response.Id = supplier.Id;
+        response.Id = supplier.SupplierId;
         response.Name = supplier.Name;
         response.Country = supplier.Country;
         response.ContactEmail = supplier.ContactEmail;

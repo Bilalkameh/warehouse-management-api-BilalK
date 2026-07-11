@@ -24,7 +24,7 @@ public class CreateSupplierHandler : IRequestHandler<CreateSupplierRequest, Crea
         _repository.Add(supplier);
 
         var response = new CreateSupplierResponse();
-        response.Id = supplier.Id;
+        response.Id = supplier.SupplierId;
         response.Name = supplier.Name;
         response.Country = supplier.Country;
         response.ContactEmail = supplier.ContactEmail;

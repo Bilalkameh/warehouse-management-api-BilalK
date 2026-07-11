@@ -21,7 +21,7 @@ public class GetSuppliersHandler : IRequestHandler<GetSuppliersRequest, List<Get
         foreach (var supplier in suppliers)
         {
             var item = new GetSuppliersResponse();
-            item.Id = supplier.Id;
+            item.Id = supplier.SupplierId;
             item.Name = supplier.Name;
             item.Country = supplier.Country;
             item.ContactEmail = supplier.ContactEmail;

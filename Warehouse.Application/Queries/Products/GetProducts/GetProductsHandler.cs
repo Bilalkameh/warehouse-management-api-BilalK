@@ -31,7 +31,7 @@ public class GetProductsHandler : IRequestHandler<GetProductsRequest, List<GetPr
                 Description = product.Description,
                 Price = product.Price,
                 QuantityInStock = product.QuantityInStock,
-                SupplierName = product.SupplierName,
+                SupplierName = product.Supplier?.Name ?? string.Empty,
                 ExpiryDate = product.ExpiryDate,
                 IsArchived = product.IsArchived,
                 CreatedAt = product.CreatedAt,
