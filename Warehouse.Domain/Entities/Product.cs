@@ -9,11 +9,14 @@ public class Product
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
 // Changed SKU to required because the lab requires it
-    public string SKU { get; private set; } = string.Empty;
+    public string Sku { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public double Price { get; private set; }
     public int QuantityInStock { get; private set; }
-    public string SupplierName { get; private set; } = string.Empty;
+    
+    public Guid SupplierId { get; private set; }
+    
+    public Supplier? Supplier { get; private set; }
     public DateTime ExpiryDate { get; private set; }
     public bool IsArchived { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -25,7 +28,7 @@ public Product(
     string description,
     double price,
     int quantityInStock,
-    string supplierName,
+    Supplier supplier,
     DateTime expiryDate)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -33,9 +36,6 @@ public Product(
 
 		if (string.IsNullOrWhiteSpace(sku))
     		throw new Exception("SKU is required.");
-        
-        if (string.IsNullOrWhiteSpace(supplierName))
-            throw new Exception("Supplier name is required.");
 
         if (price <= 0)
             throw new Exception("Price must be greater than zero.");
@@ -43,16 +43,25 @@ public Product(
         if (quantityInStock < 0)
             throw new Exception("Quantity cannot be negative.");
         
+        if (supplier == null)
+            throw new ArgumentNullException(nameof(supplier));
+        
         Id = Guid.NewGuid();
         Name = name;
-		SKU = sku;
+		Sku = sku;
         Description = description;
         Price = price;
         QuantityInStock = quantityInStock;
-        SupplierName = supplierName;
+        SupplierId = supplier.SupplierId;
+        Supplier = supplier;
         ExpiryDate = expiryDate;
         CreatedAt = DateTime.UtcNow;
         LastUpdatedAt = DateTime.UtcNow;
+    }
+
+    // parameterless constructor
+    private Product()
+    {
     }
 	
 	// Price updates are handled here instead of Application/Controllers because the rules belong to the Product entity itself.
@@ -92,12 +101,12 @@ public Product(
     	if (!supplier.IsActive)
         	throw new Exception("Cannot assign inactive supplier.");
 
-    	SupplierName = supplier.Name;
+        Supplier = supplier;
+        SupplierId = supplier.SupplierId;
     	LastUpdatedAt = DateTime.UtcNow;
 	}
 
-
-
+    
     public void Archive()
     {
         if (IsArchived)

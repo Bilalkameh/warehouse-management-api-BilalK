@@ -29,4 +29,8 @@ public class ProductImage
         FileName = fileName;
         FilePath = filePath;
     }
+    
+    private ProductImage()
+    {
+    }
 }
