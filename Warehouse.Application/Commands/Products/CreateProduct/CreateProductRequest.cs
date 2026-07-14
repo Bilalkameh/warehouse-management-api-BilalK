@@ -1,8 +1,9 @@
 using MediatR;
+using Warehouse.Application.ViewModels;
 
 namespace Warehouse.Application.Commands.Products.CreateProduct;
 
-public class CreateProductRequest : IRequest<CreateProductResponse>
+public class CreateProductRequest : IRequest<ProductViewModel>
 {
     public string Name { get; set; } = string.Empty;
     public string SKU { get; set; } = string.Empty;

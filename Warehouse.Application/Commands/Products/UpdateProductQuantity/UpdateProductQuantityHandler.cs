@@ -12,16 +12,37 @@ public class UpdateProductQuantityHandler : IRequestHandler<UpdateProductQuantit
         _repository = repository;
     }
 
-    public Task<UpdateProductQuantityResponse> Handle(UpdateProductQuantityRequest request, CancellationToken cancellationToken)
+    public async Task<UpdateProductQuantityResponse> Handle(UpdateProductQuantityRequest request, CancellationToken cancellationToken)
     {
-        var product = _repository.GetById(request.ProductId);
+        var product = await _repository.GetByIdAsync(
+            request.ProductId,
+            cancellationToken);
+
         if (product == null)
         {
-            return Task.FromResult(new UpdateProductQuantityResponse { Success = false });
+            return new UpdateProductQuantityResponse
+            {
+                Success = false
+            };
         }
-        product.UpdateQuantity(request.Quantity);
-        _repository.Update(product);
 
-        return Task.FromResult(new UpdateProductQuantityResponse { Success = true });
+        try
+        {
+            product.UpdateQuantity(request.Quantity);
+        }
+        catch (Exception)
+        {
+            return new UpdateProductQuantityResponse
+            {
+                Success = false
+            };
+        }
+
+        await _repository.UpdateAsync(product, cancellationToken);
+
+        return new UpdateProductQuantityResponse
+        {
+            Success = true
+        };
     }
 }

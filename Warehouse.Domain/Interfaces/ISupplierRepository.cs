@@ -5,8 +5,9 @@ namespace Warehouse.Domain.Interfaces;
 
 public interface ISupplierRepository
 {
-    List <Supplier> GetAll();
-    Supplier? GetById(Guid id);
-    void Add(Supplier  supplier);
-    void Update(Supplier supplier);
+    Task<List<Supplier>> GetAllAsync( CancellationToken cancellationToken);
+    Task<Supplier?> GetByIdAsync (Guid id, CancellationToken cancellationToken);
+    Task AddAsync (Supplier  supplier, CancellationToken cancellationToken);
+    Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken);
+    Task<Supplier?> GetByNameAsync(string name, CancellationToken cancellationToken);
 }

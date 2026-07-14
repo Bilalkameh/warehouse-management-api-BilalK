@@ -1,45 +1,30 @@
+using AutoMapper;
 using MediatR;
+using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Queries.Products.GetProducts;
 
-public class GetProductsHandler : IRequestHandler<GetProductsRequest, List<GetProductsResponse>>
+public class GetProductsHandler
+    : IRequestHandler<GetProductsRequest, List<ProductViewModel>>
 {
     private readonly IProductRepository _repository;
-    public GetProductsHandler(IProductRepository repository)
+    private readonly IMapper _mapper;
+
+    public GetProductsHandler(
+        IProductRepository repository,
+        IMapper mapper)
     {
         _repository = repository;
+        _mapper = mapper;
     }
 
-    public Task<List<GetProductsResponse>> Handle(GetProductsRequest request, CancellationToken cancellationToken)
+    public async Task<List<ProductViewModel>> Handle(GetProductsRequest request, CancellationToken cancellationToken)
     {
-        var products = _repository.GetAll();
-        if (request.OnlyAvailable)
-        {
-            products = products.Where(product => product.QuantityInStock > 0).ToList();
-        }
+        var products = request.OnlyAvailable
+            ? await _repository.GetAvailableAsync(cancellationToken)
+            : await _repository.GetAllAsync(cancellationToken);
 
-        var response = new List<GetProductsResponse>();
-
-        foreach (var product in products)
-        {
-            response.Add(new GetProductsResponse
-            {
-                Id = product.Id,
-                Name = product.Name,
-                SKU = product.SKU,
-                Description = product.Description,
-                Price = product.Price,
-                QuantityInStock = product.QuantityInStock,
-                SupplierName = product.SupplierName,
-                ExpiryDate = product.ExpiryDate,
-                IsArchived = product.IsArchived,
-                CreatedAt = product.CreatedAt,
-                LastUpdatedAt = product.LastUpdatedAt
-            });
-        }
-
-        return Task.FromResult(response);
+        return _mapper.Map<List<ProductViewModel>>(products);
     }
-
 }

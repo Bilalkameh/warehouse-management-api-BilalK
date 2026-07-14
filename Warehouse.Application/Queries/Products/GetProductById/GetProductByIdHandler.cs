@@ -1,42 +1,31 @@
+using AutoMapper;
 using MediatR;
+using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Queries.Products.GetProductById;
 
-public class GetProductByIdHandler : IRequestHandler<GetProductByIdRequest, GetProductByIdResponse?>
+public class GetProductByIdHandler
+    : IRequestHandler<GetProductByIdRequest, ProductViewModel?>
 {
     private readonly IProductRepository _repository;
+    private readonly IMapper _mapper;
 
-    public GetProductByIdHandler(IProductRepository repository)
+    public GetProductByIdHandler(
+        IProductRepository repository,
+        IMapper mapper)
     {
         _repository = repository;
+        _mapper = mapper;
     }
 
-    public Task<GetProductByIdResponse?> Handle(GetProductByIdRequest request, CancellationToken cancellationToken)
+    public async Task<ProductViewModel?> Handle(GetProductByIdRequest request, CancellationToken cancellationToken)
     {
-        var product = _repository.GetById(request.ProductId);
+        var product = await _repository.GetByIdAsync(request.ProductId, cancellationToken);
 
         if (product == null)
-        {
-            return Task.FromResult<GetProductByIdResponse?>(null);
-        }
-
-        var response = new GetProductByIdResponse
-        {
-            Id = product.Id,
-            Name = product.Name,
-            SKU = product.SKU,
-            Description = product.Description,
-            Price = product.Price,
-            QuantityInStock = product.QuantityInStock,
-            SupplierName = product.SupplierName,
-            ExpiryDate = product.ExpiryDate,
-            IsArchived = product.IsArchived,
-            CreatedAt = product.CreatedAt,
-            LastUpdatedAt = product.LastUpdatedAt
-        };
-
-        return Task.FromResult<GetProductByIdResponse?>(response);
+            return null;
+        
+        return _mapper.Map<ProductViewModel>(product);
     }
-
 }

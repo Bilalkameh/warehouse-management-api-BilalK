@@ -7,40 +7,44 @@ public class AssignSupplierHandler : IRequestHandler<AssignSupplierRequest, Assi
 {
     private readonly IProductRepository _productRepository;
     private readonly ISupplierRepository _supplierRepository;
-    
+
     public AssignSupplierHandler(IProductRepository productRepository, ISupplierRepository supplierRepository)
     {
         _productRepository = productRepository;
         _supplierRepository = supplierRepository;
     }
 
-    public Task<AssignSupplierResponse> Handle(AssignSupplierRequest request, CancellationToken cancellationToken)
+    public async Task<AssignSupplierResponse> Handle(AssignSupplierRequest request, CancellationToken cancellationToken)
     {
-        var product = _productRepository.GetById(request.ProductId);
-        var supplier = _supplierRepository.GetById(request.SupplierId);
+        var product = await _productRepository.GetByIdAsync(request.ProductId, cancellationToken);
+
+        var supplier = await _supplierRepository.GetByIdAsync(request.SupplierId, cancellationToken);
 
         if (product == null || supplier == null)
         {
-            var failedResponse = new AssignSupplierResponse();
-            failedResponse.Success = false;
-
-            return Task.FromResult(failedResponse);
+            return new AssignSupplierResponse
+            {
+                Success = false
+            };
         }
 
-        if (product.IsArchived || !supplier.IsActive)
+        try
         {
-            var failedResponse = new AssignSupplierResponse();
-            failedResponse.Success = false;
-
-            return Task.FromResult(failedResponse);
+            product.AssignSupplier(supplier);
+        }
+        catch (Exception)
+        {
+            return new AssignSupplierResponse
+            {
+                Success = false
+            };
         }
 
-        product.AssignSupplier(supplier);
-        _productRepository.Update(product);
-        var response = new AssignSupplierResponse();
-        response.Success = true;
+        await _productRepository.UpdateAsync(product, cancellationToken);
 
-        return Task.FromResult(response);
+        return new AssignSupplierResponse
+        {
+            Success = true
+        };
     }
-
 }

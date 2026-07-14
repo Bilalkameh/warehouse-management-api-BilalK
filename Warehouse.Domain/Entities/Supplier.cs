@@ -2,7 +2,7 @@ namespace Warehouse.Domain.Entities;
 
 public class Supplier
 {
-    public Guid Id { get; private set; }
+    public Guid SupplierId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string Country { get; private set; } = string.Empty;
     public string ContactEmail { get; private set; } = string.Empty;
@@ -30,7 +30,7 @@ public class Supplier
         if (string.IsNullOrWhiteSpace(phoneNumber))
             throw new Exception("Supplier phone number is required.");
         
-        Id = Guid.NewGuid();
+        SupplierId = Guid.NewGuid();
         Name =name;
         Country = country;
         ContactEmail = contactEmail;
@@ -39,7 +39,13 @@ public class Supplier
         CreatedAt = DateTime.UtcNow;
 		LastUpdatedAt = DateTime.UtcNow;
     }
-
+    
+    //parameterless constructor
+    
+    private Supplier()
+    {
+    }
+    
     public void Deactivate()
     {
         if (!IsActive)

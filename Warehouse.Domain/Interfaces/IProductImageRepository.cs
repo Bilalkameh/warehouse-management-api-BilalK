@@ -4,7 +4,7 @@ namespace Warehouse.Domain.Interfaces;
 
 public interface IProductImageRepository
 {
-    void Add(ProductImage image);
+    Task AddAsync(ProductImage image, CancellationToken cancellationToken);
 
-    List<ProductImage> GetByProductId(Guid productId);
+    Task<List<ProductImage>> GetByProductIdAsync (Guid productId, CancellationToken cancellationToken);
 }

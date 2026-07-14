@@ -1,6 +1,6 @@
-namespace Warehouse.Application.Commands.Products.CreateProduct;
+namespace Warehouse.Application.ViewModels;
 
-public class CreateProductResponse
+public class ProductViewModel
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

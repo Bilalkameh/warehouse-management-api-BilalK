@@ -4,38 +4,38 @@ using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Commands.Products.AddProductImage;
 
-public class AddProductImageHandler : IRequestHandler<AddProductImageRequest, AddProductImageResponse>
+public class AddProductImageHandler
+    : IRequestHandler<AddProductImageRequest, AddProductImageResponse>
 {
     private readonly IProductRepository _productRepository;
-    private readonly IProductImageRepository _imageRepository;
-    
-    public AddProductImageHandler(IProductRepository productRepository, IProductImageRepository imageRepository)
+    private readonly IProductImageRepository _productImageRepository;
+
+    public AddProductImageHandler(IProductRepository productRepository, IProductImageRepository productImageRepository)
     {
         _productRepository = productRepository;
-        _imageRepository = imageRepository;
+        _productImageRepository = productImageRepository;
     }
 
-    public Task<AddProductImageResponse> Handle(AddProductImageRequest request, CancellationToken cancellationToken)
+    public async Task<AddProductImageResponse> Handle(AddProductImageRequest request, CancellationToken cancellationToken)
     {
-        var product = _productRepository.GetById(request.ProductId);
+        var product = await _productRepository.GetByIdAsync(
+            request.ProductId,
+            cancellationToken);
 
         if (product == null)
         {
-            var failedResponse = new AddProductImageResponse();
-            failedResponse.Success = false;
-
-            return Task.FromResult(failedResponse);
+            return new AddProductImageResponse
+            {
+                Success = false
+            };
         }
 
-        var image = new ProductImage(request.ProductId, request.FileName, request.FilePath);
+        var image = new ProductImage(product, request.FileName, request.FilePath);
+        await _productImageRepository.AddAsync(image, cancellationToken);
 
-        _imageRepository.Add(image);
-
-        var response = new AddProductImageResponse();
-        response.Id = image.Id;
-        response.Success = true;
-
-        return Task.FromResult(response);
+        return new AddProductImageResponse
+        {
+            Success = true
+        };
     }
-
 }
