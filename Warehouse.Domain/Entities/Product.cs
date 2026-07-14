@@ -15,8 +15,8 @@ public class Product
     public int QuantityInStock { get; private set; }
     
     public Guid SupplierId { get; private set; }
-    
-    public Supplier? Supplier { get; private set; }
+
+    public Supplier Supplier { get; private set; } = null!;
     public DateTime ExpiryDate { get; private set; }
     public bool IsArchived { get; private set; }
     public DateTime CreatedAt { get; private set; }

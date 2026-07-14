@@ -19,16 +19,13 @@ public class GetProductByIdHandler
         _mapper = mapper;
     }
 
-    public Task<ProductViewModel?> Handle(
-        GetProductByIdRequest request,
-        CancellationToken cancellationToken)
+    public async Task<ProductViewModel?> Handle(GetProductByIdRequest request, CancellationToken cancellationToken)
     {
-        var product = _repository.GetById(request.ProductId);
+        var product = await _repository.GetByIdAsync(request.ProductId, cancellationToken);
 
         if (product == null)
-            return Task.FromResult<ProductViewModel?>(null);
-
-        var viewModel = _mapper.Map<ProductViewModel>(product);
-        return Task.FromResult<ProductViewModel?>(viewModel);
+            return null;
+        
+        return _mapper.Map<ProductViewModel>(product);
     }
 }

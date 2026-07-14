@@ -20,20 +20,11 @@ public class CreateSupplierHandler
         _mapper = mapper;
     }
 
-    public Task<SupplierViewModel> Handle(
-        CreateSupplierRequest request,
-        CancellationToken cancellationToken)
+    public async Task<SupplierViewModel> Handle(CreateSupplierRequest request, CancellationToken cancellationToken)
     {
-        var supplier = new Supplier(
-            request.Name,
-            request.Country,
-            request.ContactEmail,
-            request.PhoneNumber);
+        var supplier = new Supplier(request.Name, request.Country, request.ContactEmail, request.PhoneNumber);
 
-        _repository.Add(supplier);
-        var viewModel =
-            _mapper.Map<SupplierViewModel>(supplier);
-
-        return Task.FromResult(viewModel);
+        await _repository.AddAsync(supplier, cancellationToken);
+        return _mapper.Map<SupplierViewModel>(supplier);
     }
 }

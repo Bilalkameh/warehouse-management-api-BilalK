@@ -11,25 +11,16 @@ public class SearchProductsHandler
     private readonly IProductRepository _repository;
     private readonly IMapper _mapper;
 
-    public SearchProductsHandler(
-        IProductRepository repository,
-        IMapper mapper)
+    public SearchProductsHandler(IProductRepository repository, IMapper mapper)
     {
         _repository = repository;
         _mapper = mapper;
     }
 
-    public Task<List<ProductViewModel>> Handle(
-        SearchProductsRequest request,
-        CancellationToken cancellationToken)
+    public async Task<List<ProductViewModel>> Handle(SearchProductsRequest request, CancellationToken cancellationToken)
     {
-        var products = _repository.Search(
-            request.Name,
-            request.SupplierName);
+        var products = await _repository.SearchAsync(request.Name, request.SupplierName,cancellationToken);
         
-        var viewModels =
-            _mapper.Map<List<ProductViewModel>>(products);
-
-        return Task.FromResult(viewModels);
+        return _mapper.Map<List<ProductViewModel>>(products);
     }
 }

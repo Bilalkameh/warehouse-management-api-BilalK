@@ -3,7 +3,8 @@ using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Commands.Products.ArchiveProduct;
 
-public class ArchiveProductHandler : IRequestHandler<ArchiveProductRequest, ArchiveProductResponse>
+public class ArchiveProductHandler
+    : IRequestHandler<ArchiveProductRequest, ArchiveProductResponse>
 {
     private readonly IProductRepository _repository;
 
@@ -12,17 +13,26 @@ public class ArchiveProductHandler : IRequestHandler<ArchiveProductRequest, Arch
         _repository = repository;
     }
 
-    public Task<ArchiveProductResponse> Handle(ArchiveProductRequest request, CancellationToken cancellationToken)
+    public async Task<ArchiveProductResponse> Handle(ArchiveProductRequest request, CancellationToken cancellationToken)
     {
-        var product = _repository.GetById(request.ProductId);
+        var product = await _repository.GetByIdAsync(
+            request.ProductId,
+            cancellationToken);
 
         if (product == null)
         {
-            return Task.FromResult(new ArchiveProductResponse { Success = false });
+            return new ArchiveProductResponse
+            {
+                Success = false
+            };
         }
-        product.Archive();
-        _repository.Update(product);
 
-        return Task.FromResult(new ArchiveProductResponse { Success = true });
+        product.Archive();
+        await _repository.UpdateAsync(product, cancellationToken);
+
+        return new ArchiveProductResponse
+        {
+            Success = true
+        };
     }
 }

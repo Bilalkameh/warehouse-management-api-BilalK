@@ -23,16 +23,13 @@ public class CreateProductHandler
         _mapper = mapper;
     }
 
-    public Task<ProductViewModel> Handle(
+    public async Task<ProductViewModel> Handle(
         CreateProductRequest request,
         CancellationToken cancellationToken)
     {
-        var supplier = _supplierRepository
-            .GetAll()
-            .FirstOrDefault(supplier =>
-                supplier.Name.Equals(
-                    request.SupplierName,
-                    StringComparison.OrdinalIgnoreCase));
+        var supplier = await _supplierRepository.GetByNameAsync(
+            request.SupplierName,
+            cancellationToken);
 
         if (supplier == null)
             throw new Exception("Supplier not found.");
@@ -46,9 +43,8 @@ public class CreateProductHandler
             supplier,
             request.ExpiryDate);
 
-        _productRepository.Add(product);
-        var viewModel = _mapper.Map<ProductViewModel>(product);
-
-        return Task.FromResult(viewModel);
+        await _productRepository.AddAsync(product, cancellationToken);
+        return _mapper.Map<ProductViewModel>(product);
+        
     }
 }

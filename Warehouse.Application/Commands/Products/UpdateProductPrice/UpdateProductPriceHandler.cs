@@ -6,22 +6,43 @@ namespace Warehouse.Application.Commands.Products.UpdateProductPrice;
 public class UpdateProductPriceHandler : IRequestHandler<UpdateProductPriceRequest, UpdateProductPriceResponse>
 {
     private readonly IProductRepository _repository;
-    
+
     public UpdateProductPriceHandler(IProductRepository repository)
     {
         _repository = repository;
     }
 
-    public Task<UpdateProductPriceResponse> Handle(UpdateProductPriceRequest request, CancellationToken cancellationToken)
+    public async Task<UpdateProductPriceResponse> Handle(UpdateProductPriceRequest request, CancellationToken cancellationToken)
     {
-        var product = _repository.GetById(request.ProductId);
+        var product = await _repository.GetByIdAsync(
+            request.ProductId,
+            cancellationToken);
+
         if (product == null)
         {
-            return Task.FromResult(new UpdateProductPriceResponse { Success = false });
+            return new UpdateProductPriceResponse
+            {
+                Success = false
+            };
         }
-        product.UpdatePrice(request.Price);
-        _repository.Update(product);
-        
-        return Task.FromResult(new UpdateProductPriceResponse { Success = true });
+
+        try
+        {
+            product.UpdatePrice(request.Price);
+        }
+        catch (Exception)
+        {
+            return new UpdateProductPriceResponse
+            {
+                Success = false
+            };
+        }
+
+        await _repository.UpdateAsync(product, cancellationToken);
+
+        return new UpdateProductPriceResponse
+        {
+            Success = true
+        };
     }
 }

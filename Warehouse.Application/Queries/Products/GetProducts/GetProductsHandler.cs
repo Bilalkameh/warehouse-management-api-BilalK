@@ -19,22 +19,12 @@ public class GetProductsHandler
         _mapper = mapper;
     }
 
-    public Task<List<ProductViewModel>> Handle(
-        GetProductsRequest request,
-        CancellationToken cancellationToken)
+    public async Task<List<ProductViewModel>> Handle(GetProductsRequest request, CancellationToken cancellationToken)
     {
-        var products = _repository.GetAll();
+        var products = request.OnlyAvailable
+            ? await _repository.GetAvailableAsync(cancellationToken)
+            : await _repository.GetAllAsync(cancellationToken);
 
-        if (request.OnlyAvailable)
-        {
-            products = products
-                .Where(product =>
-                    product.QuantityInStock > 0 && !product.IsArchived)
-                .ToList();
-        }
-        var viewModels =
-            _mapper.Map<List<ProductViewModel>>(products);
-
-        return Task.FromResult(viewModels);
+        return _mapper.Map<List<ProductViewModel>>(products);
     }
 }

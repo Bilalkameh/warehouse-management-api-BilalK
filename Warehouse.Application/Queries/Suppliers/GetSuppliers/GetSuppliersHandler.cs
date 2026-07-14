@@ -19,15 +19,10 @@ public class GetSuppliersHandler
         _mapper = mapper;
     }
 
-    public Task<List<SupplierViewModel>> Handle(
-        GetSuppliersRequest request,
-        CancellationToken cancellationToken)
+    public async Task<List<SupplierViewModel>> Handle(GetSuppliersRequest request, CancellationToken cancellationToken)
     {
-        var suppliers = _repository.GetAll();
-
-        var viewModels =
-            _mapper.Map<List<SupplierViewModel>>(suppliers);
-
-        return Task.FromResult(viewModels);
+        var suppliers = await _repository.GetAllAsync(cancellationToken);
+        
+          return _mapper.Map<List<SupplierViewModel>>(suppliers);
     }
 }

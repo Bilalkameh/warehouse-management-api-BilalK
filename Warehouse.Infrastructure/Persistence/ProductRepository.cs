@@ -13,33 +13,41 @@ public class ProductRepository : IProductRepository
         _context = context;
     }
 
-    public List<Product> GetAll()
+    public async Task<List<Product>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return _context.Products
+        return await _context.Products
             .Include(product => product.Supplier)
-            .ToList();
-    }
+            .ToListAsync(cancellationToken);
+    }   
 
-    public Product? GetById(Guid id)
+    public async Task <Product?> GetByIdAsync(Guid id,CancellationToken cancellationToken)
     {
-        return _context.Products
+        return await _context.Products
             .Include(product => product.Supplier)
-            .FirstOrDefault(product => product.Id == id);
+            .FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
     }
 
-    public void Add(Product product)
+    public async Task<List<Product>> GetAvailableAsync(CancellationToken cancellationToken)
     {
-        _context.Products.Add(product);
-        _context.SaveChanges();
+        return await _context.Products
+            .Include(product => product.Supplier)
+            .Where(product => product.QuantityInStock > 0 && !product.IsArchived)
+            .ToListAsync(cancellationToken);
     }
 
-    public void Update(Product product)
+    public async Task AddAsync(Product product, CancellationToken cancellationToken)
+    {
+        await _context.Products.AddAsync(product,cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(Product product, CancellationToken cancellationToken)
     {
         _context.Products.Update(product);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public List<Product> Search(string? name, string? supplier)
+    public async Task<List<Product>> SearchAsync(string? name, string? supplierName, CancellationToken cancellationToken)
     {
         var query = _context.Products
             .Include(product => product.Supplier)
@@ -51,13 +59,12 @@ public class ProductRepository : IProductRepository
                 product.Name.Contains(name));
         }
 
-        if (!string.IsNullOrWhiteSpace(supplier))
+        if (!string.IsNullOrWhiteSpace(supplierName))
         {
             query = query.Where(product =>
-                product.Supplier != null &&
-                product.Supplier.Name.Contains(supplier));
+                product.Supplier.Name.Contains(supplierName));
         }
 
-        return query.ToList();
+        return await query.ToListAsync(cancellationToken);
     }
 }

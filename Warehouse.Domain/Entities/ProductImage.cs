@@ -4,7 +4,7 @@ public class ProductImage
 {
     public Guid Id { get; private set; }
     public Guid ProductId { get; private set; }
-    public Product? Product { get; private set; }
+    public Product Product { get; private set; } = null!;
     public string FileName { get; private set; } = string.Empty;
     public string FilePath { get; private set; } = string.Empty;
 
@@ -12,21 +12,22 @@ public class ProductImage
 // File existence and upload validation remain outside the Domain layer.
 
     public ProductImage(
-        Guid productId,
+        Product product,
         string fileName,
         string filePath)
     {
-        if (productId == Guid.Empty)
-            throw new Exception("Product id is required.");
+        if (product == null)
+            throw new ArgumentNullException(nameof(product));
 
         if (string.IsNullOrWhiteSpace(fileName))
             throw new Exception("File name is required.");
 
         if (string.IsNullOrWhiteSpace(filePath))
             throw new Exception("File path is required.");
-    
+
         Id = Guid.NewGuid();
-        ProductId = productId;
+        Product = product;
+        ProductId = product.Id;
         FileName = fileName;
         FilePath = filePath;
     }

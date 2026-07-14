@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Warehouse.Domain.Entities;
 using Warehouse.Domain.Interfaces;
 
@@ -12,16 +13,20 @@ public class ProductImageRepository : IProductImageRepository
         _context = context;
     }
 
-    public void Add(ProductImage image)
+    public async Task AddAsync(ProductImage image, CancellationToken cancellationToken)
     {
-        _context.ProductImages.Add(image);
-        _context.SaveChanges();
+        await _context.ProductImages.AddAsync(
+            image,
+            cancellationToken);
+
+        await _context.SaveChangesAsync(
+            cancellationToken);
     }
 
-    public List<ProductImage> GetByProductId(Guid productId)
+    public async Task<List<ProductImage>> GetByProductIdAsync(Guid productId, CancellationToken cancellationToken)
     {
-        return _context.ProductImages
+        return await _context.ProductImages
             .Where(image => image.ProductId == productId)
-            .ToList();
+            .ToListAsync(cancellationToken);
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Warehouse.Domain.Entities;
 using Warehouse.Domain.Interfaces;
 
@@ -12,26 +13,41 @@ public class SupplierRepository : ISupplierRepository
         _context = context;
     }
 
-    public List<Supplier> GetAll()
+    public async Task<List<Supplier>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return _context.Suppliers.ToList();
+        return await _context.Suppliers
+            .ToListAsync(cancellationToken);
     }
 
-    public Supplier? GetById(Guid id)
+    public async Task<Supplier?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return _context.Suppliers
-            .FirstOrDefault(supplier => supplier.SupplierId == id);
+        return await _context.Suppliers
+            .FirstOrDefaultAsync(
+                supplier => supplier.SupplierId == id,
+                cancellationToken);
     }
 
-    public void Add(Supplier supplier)
+    public async Task<Supplier?> GetByNameAsync(string name, CancellationToken cancellationToken)
     {
-        _context.Suppliers.Add(supplier);
-        _context.SaveChanges();
+        var lowerName = name.ToLower();
+
+        return await _context.Suppliers
+            .FirstOrDefaultAsync(
+                supplier =>
+                    supplier.Name.ToLower() == lowerName, cancellationToken);
     }
 
-    public void Update(Supplier supplier)
+    public async Task AddAsync(Supplier supplier, CancellationToken cancellationToken)
+    {
+        await _context.Suppliers.AddAsync(supplier, cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(Supplier supplier, CancellationToken cancellationToken)
     {
         _context.Suppliers.Update(supplier);
-        _context.SaveChanges();
+        
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

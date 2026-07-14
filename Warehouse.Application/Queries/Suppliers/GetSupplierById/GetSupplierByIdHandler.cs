@@ -19,18 +19,13 @@ public class GetSupplierByIdHandler
         _mapper = mapper;
     }
 
-    public Task<SupplierViewModel?> Handle(
-        GetSupplierByIdRequest request,
-        CancellationToken cancellationToken)
+    public async Task<SupplierViewModel?> Handle(GetSupplierByIdRequest request, CancellationToken cancellationToken)
     {
-        var supplier = _repository.GetById(request.SupplierId);
+        var supplier = await _repository.GetByIdAsync(request.SupplierId, cancellationToken);
 
         if (supplier == null)
-            return Task.FromResult<SupplierViewModel?>(null);
+            return null;
 
-        var viewModel =
-            _mapper.Map<SupplierViewModel>(supplier);
-
-        return Task.FromResult<SupplierViewModel?>(viewModel);
+        return _mapper.Map<SupplierViewModel>(supplier);
     }
 }
