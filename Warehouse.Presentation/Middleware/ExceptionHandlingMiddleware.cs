@@ -1,3 +1,4 @@
+using FluentValidation;
 using Warehouse.Application.Exceptions;
 using Warehouse.Domain.Exceptions;
 using Warehouse.Presentation.Models;
@@ -23,9 +24,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception exception)
         {
-            _logger.LogError(
-                exception,
-                "An unhandled exception occurred.");
+            _logger.LogError(exception,"An unhandled exception occurred.");
 
             await HandleExceptionAsync(context, exception);
         }
@@ -42,6 +41,15 @@ public class ExceptionHandlingMiddleware
             statusCode = StatusCodes.Status404NotFound;
             code = "NOT_FOUND";
             message = exception.Message;
+        }
+        else if (exception is ValidationException validationException)
+        {
+            statusCode = StatusCodes.Status400BadRequest;
+            code = "VALIDATION_ERROR";
+
+            message = validationException.Errors
+                .FirstOrDefault()?.ErrorMessage
+                ?? "The request is invalid.";
         }
         else if (exception is BusinessRuleException)
         {
@@ -65,7 +73,6 @@ public class ExceptionHandlingMiddleware
 
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
-
         await context.Response.WriteAsJsonAsync(response);
     }
 }
