@@ -48,8 +48,6 @@ public class ProductsController : ControllerBase
             ProductId = id
         };
         var product = await _mediator.Send(request);
-        if (product == null)
-            return NotFound("Product not found");
 
         return Ok(product);
     }
@@ -95,11 +93,8 @@ public class ProductsController : ControllerBase
             Quantity = quantity
         };
 
-        var result = await _mediator.Send(request);
-
-        if (!result.Success)
-            return BadRequest("Invalid product or quantity");
-
+        await _mediator.Send(request);
+        
         return Ok();
     }
 
@@ -115,10 +110,7 @@ public class ProductsController : ControllerBase
             Price = price
         };
 
-        var result = await _mediator.Send(request);
-
-        if (!result.Success)
-            return BadRequest("Invalid product or price");
+        await _mediator.Send(request);
 
         return Ok();
     }
@@ -134,10 +126,7 @@ public class ProductsController : ControllerBase
             ProductId = id
         };
 
-        var result = await _mediator.Send(request);
-
-        if (!result.Success)
-            return NotFound("Product not found");
+        await _mediator.Send(request);
 
         return Ok();
     }
@@ -159,8 +148,6 @@ public class ProductsController : ControllerBase
         };
 
         var result = await _mediator.Send(request);
-        if (!result.Success)
-            return BadRequest("Invalid product or file.");
 
         return Ok(result);
     }
@@ -199,9 +186,7 @@ public class ProductsController : ControllerBase
             SupplierId = supplierId
         };
 
-        var result = await _mediator.Send(request);
-        if (!result.Success)
-            return BadRequest("Invalid product or supplier");
+        await _mediator.Send(request);
 
         return Ok();
     }

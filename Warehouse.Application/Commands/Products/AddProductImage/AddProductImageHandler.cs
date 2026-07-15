@@ -1,11 +1,11 @@
 using MediatR;
+using Warehouse.Application.Exceptions;
 using Warehouse.Domain.Entities;
 using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Commands.Products.AddProductImage;
 
-public class AddProductImageHandler
-    : IRequestHandler<AddProductImageRequest, AddProductImageResponse>
+public class AddProductImageHandler : IRequestHandler<AddProductImageRequest, AddProductImageResponse>
 {
     private readonly IProductRepository _productRepository;
     private readonly IProductImageRepository _productImageRepository;
@@ -23,12 +23,7 @@ public class AddProductImageHandler
             cancellationToken);
 
         if (product == null)
-        {
-            return new AddProductImageResponse
-            {
-                Success = false
-            };
-        }
+            throw new NotFoundException("Product was not found.");
 
         var image = new ProductImage(product, request.FileName, request.FilePath);
         await _productImageRepository.AddAsync(image, cancellationToken);

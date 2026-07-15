@@ -40,8 +40,6 @@ public class SuppliersController : ControllerBase
         };
 
         var supplier = await _mediator.Send(request);
-        if (supplier == null)
-            return NotFound("Supplier not found.");
 
         return Ok(supplier);
     }
@@ -69,9 +67,7 @@ public class SuppliersController : ControllerBase
             SupplierId = id
         };
 
-        var result = await _mediator.Send(request);
-        if (!result.Success)
-            return NotFound("Supplier not found.");
+        await _mediator.Send(request);
 
         return Ok();
     }

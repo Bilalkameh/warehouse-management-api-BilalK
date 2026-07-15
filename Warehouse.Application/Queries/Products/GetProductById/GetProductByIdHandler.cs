@@ -1,6 +1,7 @@
 using AutoMapper;
 using MediatR;
 using Warehouse.Application.ViewModels;
+using Warehouse.Application.Exceptions;
 using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Queries.Products.GetProductById;
@@ -24,7 +25,7 @@ public class GetProductByIdHandler
         var product = await _repository.GetByIdAsync(request.ProductId, cancellationToken);
 
         if (product == null)
-            return null;
+            throw new NotFoundException("Product was not found.");
         
         return _mapper.Map<ProductViewModel>(product);
     }

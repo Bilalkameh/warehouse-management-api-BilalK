@@ -1,5 +1,6 @@
 using AutoMapper;
 using MediatR;
+using Warehouse.Application.Exceptions;
 using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Entities;
 using Warehouse.Domain.Interfaces;
@@ -32,7 +33,7 @@ public class CreateProductHandler
             cancellationToken);
 
         if (supplier == null)
-            throw new Exception("Supplier not found.");
+            throw new NotFoundException("Supplier was not found.");
 
         var product = new Product(
             request.Name,

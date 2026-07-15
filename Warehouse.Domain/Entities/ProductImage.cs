@@ -1,3 +1,5 @@
+using Warehouse.Domain.Exceptions;
+
 namespace Warehouse.Domain.Entities;
 
 public class ProductImage
@@ -20,10 +22,10 @@ public class ProductImage
             throw new ArgumentNullException(nameof(product));
 
         if (string.IsNullOrWhiteSpace(fileName))
-            throw new Exception("File name is required.");
+            throw new BusinessRuleException("File name is required.");
 
         if (string.IsNullOrWhiteSpace(filePath))
-            throw new Exception("File path is required.");
+            throw new BusinessRuleException("File path is required.");
 
         Id = Guid.NewGuid();
         Product = product;

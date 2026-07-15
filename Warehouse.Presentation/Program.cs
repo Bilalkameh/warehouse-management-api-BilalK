@@ -3,6 +3,7 @@ using Warehouse.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Warehouse.Infrastructure.Persistence;
 using Warehouse.Application.Mappings;
+using Warehouse.Presentation.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,8 @@ builder.Services.AddMediatR(configuration =>
 });
     
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
