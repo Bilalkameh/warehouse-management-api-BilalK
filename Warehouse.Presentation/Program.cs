@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Warehouse.Infrastructure.Persistence;
 using Warehouse.Application.Mappings;
 using Warehouse.Presentation.Middleware;
+using Microsoft.AspNetCore.Mvc;
+using Warehouse.Presentation.Filters;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +16,20 @@ builder.Services.AddDbContext<WarehouseDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
-builder.Services.AddControllers();
+builder.Services.AddScoped<ActionLoggingFilter>();
+builder.Services.AddScoped<ModelValidationFilter>();
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.AddService<ActionLoggingFilter>();
+    options.Filters.AddService<ModelValidationFilter>();
+});
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -33,7 +49,9 @@ builder.Services.AddMediatR(configuration =>
     
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RequestTimingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
