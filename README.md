@@ -31,11 +31,11 @@ Similarly The implemented SuppliersController.cs controller's endpoints allow to
 Project Structure:
 The implementation can be found inside the warehouse-management folder:
 
-`Models/` -> Domain entities (Product, Supplier, ProductImage)
-`Contracts/` -> Request DTOs for API inputs
-`Controllers/` -> Controllers with API endpoints (Both Products and Suppliers Controllers)
-`FakeWarehouseStore` -> In-memory product storage
-`FakeSupplierStore` -> In-memory supplier storage
+Models/ -> Domain entities (Product, Supplier, ProductImage)
+Contracts/ -> Request DTOs for API inputs
+Controllers/ -> Controllers with API endpoints (Both Products and Suppliers Controllers)
+FakeWarehouseStore -> In-memory product storage
+FakeSupplierStore -> In-memory supplier storage
 
 
 Refactoring (Controller-Service Pattern):
@@ -193,3 +193,147 @@ Then open localhost:5035
 
 # Screenshots
 Swagger screenshots showing the refactored API behavior will be included in the Pull Request.
+
+----------------------------------------------------------------------------------------
+
+(Session-04) Database Implementation using EF Core Code First
+
+In this session, I replaced the in-memory repositories from session 03 with a real PostgreSQL database using Entity Framework Core Code First.
+
+The Domain and Application layers still depend on repository interfaces, while the Infrastructure layer now implements those interfaces using WarehouseDbContext. Because of this, the controllers and MediatR use cases stayed almost the same even though the storage changed from static lists to a database.
+
+# Features
+
+### PostgreSQL and EF Core
+- Added WarehouseDbContext inside the Infrastructure layer.
+- Connected the API to PostgreSQL running in Docker.
+- Used EF Core migrations to create the WarehouseDb database in datagrip.
+- Added database tables and relationships for Products, Suppliers, and ProductImages.
+
+### Real Repository Implementations
+The fake repositories were replaced with EF Core repositories:
+- ProductRepository
+- SupplierRepository
+- ProductImageRepository
+
+### AutoMapper and ViewModels
+AutoMapper was added to convert database entities into:
+- ProductViewModel
+- SupplierViewModel
+
+I used ViewModels so the API does not return EF Core entities and navigation properties directly. 
+This also avoids returning database details that the client does not need.
+
+# Run instructions
+
+Make sure Docker Desktop is running, then start the PostgreSQL container:
+
+
+docker start postgresdb
+dotnet restore
+dotnet ef database update --project Warehouse.Infrastructure --startup-project Warehouse.Presentation
+dotnet run --project Warehouse.Presentation
+
+Then open:
+
+http://localhost:5035/swagger
+
+# API endpoints
+
+The main change in this session was how the data is stored, so most route names stayed the same. These endpoints now read and write data from PostgreSQL:
+
+Products:
+- GET /api/products -> Get all products
+- GET /api/products/{id} -> Get a product by ID
+- GET /api/products/search -> Search products by name or supplier
+- POST /api/products -> Add a product
+- POST /api/products/{id}/quantity -> Update product quantity
+- POST /api/products/{id}/price -> Update product price
+- POST /api/products/{id}/image -> Add a product image
+- POST /api/products/{id}/assign-supplier/{supplierId} -> Assign a supplier
+- DELETE /api/products/{id} -> Archive a product
+
+Suppliers:
+- GET /api/suppliers -> Get all suppliers
+- GET /api/suppliers/{id} -> Get a supplier by ID
+- POST /api/suppliers -> Add a supplier
+- DELETE /api/suppliers/{id} -> Deactivate a supplier
+
+----------------------------------------------------------------------------------------
+
+
+(Session-05) Advanced .NET Core
+
+In this session, I focused on making the API more consistent.
+Validation, errors, logging, and request information are now handled in common places instead of repeating the same code in every controller or handler.
+
+# Features
+
+### Consistent Errors and Validation
+Added one shared ApiErrorResponse containing 3 attributes:
+- Error code
+- Safe message
+- Trace ID
+
+Custom exceptions that are used for cases that the application expects. They simply inherit from the normal Exception class but they use more clear names:
+- NotFoundException when a product, supplier, or DTO cannot be found
+- BusinessRuleException when a domain rule is broken
+
+Simple property rules now use Data Annotations, for example required names, string lengths, and future expiry dates and so on
+Also used FluentValidation for the stock adjustment
+
+Middleware works with the general HTTP context. It does not depend on a specific controller or request context.
+For example, CorrelationIdMiddleware adds a correlation ID to every request, it doesnt depend on the context of the request, no matter the request same operation.
+
+Filters work inside MVC and have more information about the context of the action or request. For example, ModelValidationFilter can read ModelState which is 
+dependent on the specific request context.  
+
+New middleware:
+- CorrelationIdMiddleware -> Reads or creates X-Correlation-ID and also uses it as the trace ID
+- ExceptionHandlingMiddleware -> Logs the real exception and returns a safe API response
+- RequestTimingMiddleware -> Measures the request and adds X-Response-Time
+
+New filters:
+- ModelValidationFilter -> Returns the shared validation response when ModelState is invalid
+- ActionLoggingFilter -> Logs which controller action is executing and when it finishes
+
+### Async and Cancellation Tokens
+All endpoints are now async and accept a CancellationToken and pass it through MediatR, handlers, repositories, and EF Core queries. 
+This is very important because now DB operations dont cause long waiting time and make the application slower
+
+The inventory dashboard loads three independent values:
+- Total products
+- Available products
+- Active suppliers
+
+The three queries are started together and awaited using Task.WhenAll. 
+Because there are 3 different await's all have to complete for the operation to happen which is exactly what we want.
+
+
+
+### Stock Adjustments
+The previously empty StockMovement entity is now implemented and stored in the database.
+
+When stock is adjusted, the handler:
+1. Validates the request
+2. Loads the product
+3. Calculates and applies the new quantity
+4. Creates a StockMovement record
+
+Had to make anothe migration to add the table and update the db
+
+# Run instructions
+
+docker start postgresdb
+dotnet ef database update --project Warehouse.Infrastructure --startup-project Warehouse.Presentation
+dotnet run --project Warehouse.Presentation
+Then open localhost:5035
+
+
+# New endpoints
+- POST /api/stock-adjustments -> Increase or reduce a product's quantity and save the movement
+- GET /api/inventory/dashboard -> Return total products, available products, and active suppliers
+- GET /api/metadata/validation/{dtoName} -> Return validation metadata for an approved DTO
+
+# Screenshots
+In the PR description
