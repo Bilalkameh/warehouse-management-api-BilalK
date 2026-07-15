@@ -9,6 +9,7 @@ using Warehouse.Application.Commands.Products.UpdateProductQuantity;
 using Warehouse.Application.Queries.Products.GetProductById;
 using Warehouse.Application.Queries.Products.GetProducts;
 using Warehouse.Application.Queries.Products.SearchProducts;
+using System.ComponentModel.DataAnnotations;
 namespace Warehouse.Presentation.Controllers;
 
 [ApiController]
@@ -86,7 +87,7 @@ public class ProductsController : ControllerBase
     [HttpPost("{id}/quantity")]
     public async Task<IActionResult> UpdateQuantity(
         [FromRoute] Guid id,
-        [FromBody] int quantity)
+        [FromBody] [Range(0, int.MaxValue, ErrorMessage = "Quantity cannot be negative.")] int quantity)
     {
         var request = new UpdateProductQuantityRequest
         {
@@ -105,10 +106,9 @@ public class ProductsController : ControllerBase
 
     // 6. Update price
     [HttpPost("{id}/price")]
-    public async Task<IActionResult> UpdatePrice(
-        [FromRoute] Guid id,
-        [FromBody] double price)
-    {
+    public async Task<IActionResult> UpdatePrice([FromRoute] Guid id, [FromBody] 
+        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than zero.")] double price)
+    {    
         var request = new UpdateProductPriceRequest
         {
             ProductId = id,
