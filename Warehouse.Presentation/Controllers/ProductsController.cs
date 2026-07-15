@@ -10,6 +10,7 @@ using Warehouse.Application.Queries.Products.GetProductById;
 using Warehouse.Application.Queries.Products.GetProducts;
 using Warehouse.Application.Queries.Products.SearchProducts;
 using System.ComponentModel.DataAnnotations;
+
 namespace Warehouse.Presentation.Controllers;
 
 [ApiController]
@@ -27,27 +28,26 @@ public class ProductsController : ControllerBase
 
     // 1. Get all products
     [HttpGet]
-    public async Task<IActionResult> GetAllProducts([FromQuery] bool onlyAvailable = false)
+    public async Task<IActionResult> GetAllProducts([FromQuery] bool onlyAvailable = false, CancellationToken cancellationToken = default)
     {
         var request = new GetProductsRequest
         {
             OnlyAvailable = onlyAvailable
         };
-        var products = await _mediator.Send(request);
 
+        var products = await _mediator.Send(request, cancellationToken);
         return Ok(products);
     }
 
-
     // 2. Get product by id
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetProductById([FromRoute] Guid id)
+    public async Task<IActionResult> GetProductById([FromRoute] Guid id, CancellationToken cancellationToken )
     {
         var request = new GetProductByIdRequest
         {
             ProductId = id
         };
-        var product = await _mediator.Send(request);
+        var product = await _mediator.Send(request, cancellationToken);
 
         return Ok(product);
     }
@@ -55,14 +55,14 @@ public class ProductsController : ControllerBase
 
     // 3. Search products
     [HttpGet("search")]
-    public async Task<IActionResult> SearchProducts([FromQuery] string? name, [FromQuery] string? supplier)
+    public async Task<IActionResult> SearchProducts([FromQuery] string? name, [FromQuery] string? supplier, CancellationToken cancellationToken)
     {
         var request = new SearchProductsRequest
         {
             Name = name,
             SupplierName = supplier
         };
-        var products = await _mediator.Send(request);
+        var products = await _mediator.Send(request, cancellationToken);
         
         return Ok(products);
     }
@@ -70,9 +70,9 @@ public class ProductsController : ControllerBase
 
     // 4. Create product
     [HttpPost]
-    public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request)
+    public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request, CancellationToken cancellationToken)
     {
-        var product = await _mediator.Send(request);
+        var product = await _mediator.Send(request, cancellationToken);
 
         return CreatedAtAction(
             nameof(GetProductById),
@@ -83,9 +83,9 @@ public class ProductsController : ControllerBase
 
     // 5. Update quantity
     [HttpPost("{id}/quantity")]
-    public async Task<IActionResult> UpdateQuantity(
-        [FromRoute] Guid id,
-        [FromBody] [Range(0, int.MaxValue, ErrorMessage = "Quantity cannot be negative.")] int quantity)
+    public async Task<IActionResult> UpdateQuantity([FromRoute] Guid id, 
+        [FromBody] [Range(0, int.MaxValue, ErrorMessage = "Quantity cannot be negative.")] int quantity,
+        CancellationToken cancellationToken = default)
     {
         var request = new UpdateProductQuantityRequest
         {
@@ -93,7 +93,7 @@ public class ProductsController : ControllerBase
             Quantity = quantity
         };
 
-        await _mediator.Send(request);
+        await _mediator.Send(request, cancellationToken);
         
         return Ok();
     }
@@ -102,7 +102,8 @@ public class ProductsController : ControllerBase
     // 6. Update price
     [HttpPost("{id}/price")]
     public async Task<IActionResult> UpdatePrice([FromRoute] Guid id, [FromBody] 
-        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than zero.")] double price)
+        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than zero.")] double price,
+        CancellationToken cancellationToken)
     {    
         var request = new UpdateProductPriceRequest
         {
@@ -110,7 +111,7 @@ public class ProductsController : ControllerBase
             Price = price
         };
 
-        await _mediator.Send(request);
+        await _mediator.Send(request, cancellationToken);
 
         return Ok();
     }
@@ -118,24 +119,21 @@ public class ProductsController : ControllerBase
 
     // 7. Delete product (soft delete)
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProduct(
-        [FromRoute] Guid id)
+    public async Task<IActionResult> DeleteProduct([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new ArchiveProductRequest
         {
             ProductId = id
         };
 
-        await _mediator.Send(request);
+        await _mediator.Send(request, cancellationToken);
 
         return Ok();
     }
     
     // 8. Upload image
     [HttpPost("{id}/image")]
-    public async Task<IActionResult> UploadImage(
-        [FromRoute] Guid id,
-        IFormFile? file)
+    public async Task<IActionResult> UploadImage([FromRoute] Guid id, IFormFile? file, CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)
             return BadRequest("No file was uploaded.");
@@ -147,7 +145,7 @@ public class ProductsController : ControllerBase
             FilePath = $"uploads/{file.FileName}"
         };
 
-        var result = await _mediator.Send(request);
+        var result = await _mediator.Send(request, cancellationToken);
 
         return Ok(result);
     }
@@ -155,8 +153,7 @@ public class ProductsController : ControllerBase
 
     // 9. Server time
     [HttpGet("server-time")]
-    public IActionResult GetServerTime(
-        [FromHeader(Name = "Accept-Language")] string? language)
+    public IActionResult GetServerTime([FromHeader(Name = "Accept-Language")] string? language)
     {
         var now = DateTime.UtcNow;
 
@@ -176,9 +173,7 @@ public class ProductsController : ControllerBase
 
     // 10. Assign supplier
     [HttpPost("{id}/assign-supplier/{supplierId}")]
-    public async Task<IActionResult> AssignSupplier(
-        [FromRoute] Guid id,
-        [FromRoute] Guid supplierId)
+    public async Task<IActionResult> AssignSupplier([FromRoute] Guid id, [FromRoute] Guid supplierId, CancellationToken cancellationToken)
     {
         var request = new AssignSupplierRequest
         {
@@ -186,7 +181,7 @@ public class ProductsController : ControllerBase
             SupplierId = supplierId
         };
 
-        await _mediator.Send(request);
+        await _mediator.Send(request, cancellationToken);
 
         return Ok();
     }

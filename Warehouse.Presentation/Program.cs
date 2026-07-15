@@ -10,7 +10,7 @@ using Warehouse.Presentation.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<WarehouseDbContext>(options =>
+builder.Services.AddDbContextFactory<WarehouseDbContext>(options =>
 {
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -40,6 +40,7 @@ builder.Services.AddAutoMapper(
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
+builder.Services.AddScoped<IInventoryDashboardRepository, InventoryDashboardRepository>();
 
 // mediatr dependencies
 builder.Services.AddMediatR(configuration =>
