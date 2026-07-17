@@ -2,7 +2,7 @@ namespace Warehouse.Presentation.Middleware;
 
 public class CorrelationIdMiddleware
 {
-    private const string HeaderName = "X-Correlation-ID";
+    private const string CorrelationIdHeader = "X-Correlation-ID";
     private readonly RequestDelegate _next;
 
     public CorrelationIdMiddleware(RequestDelegate next)
@@ -12,7 +12,7 @@ public class CorrelationIdMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var correlationId = context.Request.Headers[HeaderName].ToString();
+        var correlationId = context.Request.Headers[CorrelationIdHeader].ToString();
 
         if (string.IsNullOrWhiteSpace(correlationId))
         {
@@ -20,7 +20,7 @@ public class CorrelationIdMiddleware
         }
 
         context.TraceIdentifier = correlationId;
-        context.Response.Headers[HeaderName] = correlationId;
+        context.Response.Headers[CorrelationIdHeader] = correlationId;
 
         await _next(context);
     }
