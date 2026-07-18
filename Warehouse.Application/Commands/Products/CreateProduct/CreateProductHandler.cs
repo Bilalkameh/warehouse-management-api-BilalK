@@ -1,6 +1,8 @@
 using AutoMapper;
 using MediatR;
+using Warehouse.Application.Cache;
 using Warehouse.Application.Exceptions;
+using Warehouse.Application.Interfaces;
 using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Entities;
 using Warehouse.Domain.Interfaces;
@@ -13,15 +15,14 @@ public class CreateProductHandler
     private readonly IProductRepository _productRepository;
     private readonly ISupplierRepository _supplierRepository;
     private readonly IMapper _mapper;
+    private readonly ICacheService _cache;
 
-    public CreateProductHandler(
-        IProductRepository productRepository,
-        ISupplierRepository supplierRepository,
-        IMapper mapper)
+    public CreateProductHandler(IProductRepository productRepository, ISupplierRepository supplierRepository, IMapper mapper,  ICacheService cache)
     {
         _productRepository = productRepository;
         _supplierRepository = supplierRepository;
         _mapper = mapper;
+        _cache = cache;
     }
 
     public async Task<ProductViewModel> Handle(
@@ -45,6 +46,10 @@ public class CreateProductHandler
             request.ExpiryDate);
 
         await _productRepository.AddAsync(product, cancellationToken);
+        await _cache.RemoveAsync(ProductCacheKeys.All, cancellationToken);
+
+        await _cache.RemoveAsync(ProductCacheKeys.Available, cancellationToken);
+        
         return _mapper.Map<ProductViewModel>(product);
         
     }

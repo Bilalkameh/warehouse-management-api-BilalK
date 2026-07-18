@@ -11,6 +11,8 @@ using Warehouse.Application.Commands.Stock;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using Warehouse.Presentation.Swagger;
+using Warehouse.Application.Interfaces;
+using Warehouse.Infrastructure.Cache;
 using Serilog;
 
 
@@ -89,6 +91,17 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
 });
+
+//Caching
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration =
+        builder.Configuration.GetConnectionString("Redis");
+
+    options.InstanceName = "Warehouse_";
+});
+
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
 
 var app = builder.Build();
