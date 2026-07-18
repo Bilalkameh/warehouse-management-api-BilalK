@@ -11,9 +11,23 @@ using Warehouse.Application.Commands.Stock;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using Warehouse.Presentation.Swagger;
+using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+var logPath = Path.Combine(
+    builder.Environment.ContentRootPath,
+    "Logs",
+    "warehouse-log-.txt");
+
+builder.Host.UseSerilog((context, configuration) =>
+{
+    configuration
+        .MinimumLevel.Information()
+        .WriteTo.Console()
+        .WriteTo.File(logPath, rollingInterval: RollingInterval.Day);
+});
 
 builder.Services.AddDbContextFactory<WarehouseDbContext>(options =>
 {

@@ -5,6 +5,7 @@ using Warehouse.Application.Exceptions;
 using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Entities;
 using Warehouse.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Warehouse.Application.Commands.Stock;
 
@@ -13,12 +14,15 @@ public class StockAdjustmentHandler : IRequestHandler<StockAdjustmentRequest, Pr
     private readonly IProductRepository _productRepository;
     private readonly IValidator<StockAdjustmentRequest> _validator;
     private readonly IMapper _mapper;
+    private readonly ILogger<StockAdjustmentHandler> _logger;
 
-    public StockAdjustmentHandler(IProductRepository productRepository, IValidator<StockAdjustmentRequest> validator, IMapper mapper)
+    public StockAdjustmentHandler(IProductRepository productRepository, IValidator<StockAdjustmentRequest> validator, 
+        IMapper mapper, ILogger<StockAdjustmentHandler> logger)
     {
         _productRepository = productRepository;
         _validator = validator;
         _mapper = mapper;
+        _logger = logger;
     }
 
     public async Task<ProductViewModel> Handle(StockAdjustmentRequest request, CancellationToken cancellationToken)
@@ -40,6 +44,11 @@ public class StockAdjustmentHandler : IRequestHandler<StockAdjustmentRequest, Pr
         var movement = new StockMovement(product, request.QuantityChange, request.Reason);
 
         await _productRepository.AdjustStockAsync(product, movement, cancellationToken);
+        
+        _logger.LogInformation("Stock adjusted for product {ProductId} by {QuantityChange}. New quantity is {NewQuantity}",
+            product.Id,
+            request.QuantityChange,
+            product.QuantityInStock);
         
             
         return _mapper.Map<ProductViewModel>(product);
