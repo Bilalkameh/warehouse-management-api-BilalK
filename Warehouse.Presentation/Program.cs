@@ -16,6 +16,9 @@ using Warehouse.Infrastructure.Cache;
 using Serilog;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Hangfire;
+using Hangfire.PostgreSql;
+using Warehouse.Application.BackgroundJobs;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -120,6 +123,21 @@ builder.Services
     .AddInMemoryStorage();
 
 
+// Background jobs
+builder.Services.AddHangfire(configuration =>
+{
+    configuration.UsePostgreSqlStorage(options =>
+    {
+        options.UseNpgsqlConnection(
+            builder.Configuration.GetConnectionString(
+                "DefaultConnection"));
+    });
+});
+
+builder.Services.AddHangfireServer();
+builder.Services.AddScoped<ProductExpiryJob>();
+
+
 
 var app = builder.Build();
 
@@ -132,6 +150,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHangfireDashboard("/hangfire");
 }
 
 app.UseHttpsRedirection();
@@ -150,4 +169,12 @@ app.MapHealthChecksUI(options =>
     options.ApiPath = "/health-ui-api";
 });
 
+
+
+var productExpirySchedule =
+    app.Configuration["BackgroundJobs:ProductExpirySchedule"] ?? Cron.Daily();
+
+RecurringJob.AddOrUpdate<ProductExpiryJob>("product-expiry-check",
+    job => job.CheckProductExpiryAsync(),
+    productExpirySchedule);
 app.Run();
