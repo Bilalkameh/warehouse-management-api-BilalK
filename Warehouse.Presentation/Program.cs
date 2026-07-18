@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Warehouse.Application.BackgroundJobs;
+using Warehouse.Presentation.HealthChecks;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -113,7 +114,7 @@ builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services
     .AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "PostgreSQL")
-    .AddRedis(builder.Configuration.GetConnectionString("Redis")!, name: "Redis");
+    .AddCheck<RedisRetryHealthCheck>("Redis");
 
 builder.Services
     .AddHealthChecksUI(options =>
