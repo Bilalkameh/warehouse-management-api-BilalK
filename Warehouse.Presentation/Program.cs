@@ -14,6 +14,8 @@ using Warehouse.Presentation.Swagger;
 using Warehouse.Application.Interfaces;
 using Warehouse.Infrastructure.Cache;
 using Serilog;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -104,14 +106,25 @@ builder.Services.AddStackExchangeRedisCache(options =>
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
 
+//Health checks
+builder.Services
+    .AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "PostgreSQL")
+    .AddRedis(builder.Configuration.GetConnectionString("Redis")!, name: "Redis");
+
+builder.Services
+    .AddHealthChecksUI(options =>
+    {
+        options.AddHealthCheckEndpoint("Warehouse API", "/health");
+    })
+    .AddInMemoryStorage();
+
+
+
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
-app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseRequestLocalization();
-
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<RequestTimingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestTimingMiddleware>();
 
@@ -124,5 +137,17 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapControllers();
+
+//Map health checks
+app.MapHealthChecks("/health", new HealthCheckOptions
+    {
+        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    });
+
+app.MapHealthChecksUI(options =>
+{
+    options.UIPath = "/health-ui";
+    options.ApiPath = "/health-ui-api";
+});
 
 app.Run();
