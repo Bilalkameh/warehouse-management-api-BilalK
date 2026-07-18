@@ -8,14 +8,16 @@ using Microsoft.AspNetCore.Mvc;
 using Warehouse.Presentation.Filters;
 using FluentValidation;
 using Warehouse.Application.Commands.Stock;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
+using Warehouse.Presentation.Swagger;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContextFactory<WarehouseDbContext>(options =>
 {
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 builder.Services.AddScoped<ActionLoggingFilter>();
@@ -35,7 +37,10 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.OperationFilter<AcceptLanguageHeaderOperationFilter>();
+});
 
 builder.Services.AddAutoMapper(
     configuration => { }, typeof(MappingProfile));
@@ -52,9 +57,34 @@ builder.Services.AddMediatR(configuration =>
     configuration.RegisterServicesFromAssemblyContaining<CreateProductRequest>();
 });
     
+//Localization
+builder.Services.AddLocalization(options =>
+{
+    options.ResourcesPath = "Resources";
+});
+
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[]
+    {
+        new CultureInfo("en-US"),
+        new CultureInfo("fr-FR")
+    };
+
+    options.DefaultRequestCulture = new RequestCulture("en-US");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
+
+
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseRequestLocalization();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RequestTimingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestTimingMiddleware>();
 
