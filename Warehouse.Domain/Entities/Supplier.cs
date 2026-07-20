@@ -1,3 +1,5 @@
+using Warehouse.Domain.Exceptions;
+
 namespace Warehouse.Domain.Entities;
 
 public class Supplier
@@ -19,16 +21,16 @@ public class Supplier
         string phoneNumber)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new Exception("Supplier name is required.");
+            throw new BusinessRuleException("Supplier name is required.");
 
         if (string.IsNullOrWhiteSpace(country))
-            throw new Exception("Supplier country is required.");
+            throw new BusinessRuleException("Supplier country is required.");
 
         if (string.IsNullOrWhiteSpace(contactEmail))
-            throw new Exception("Supplier email is required.");
+            throw new BusinessRuleException("Supplier email is required.");
 
         if (string.IsNullOrWhiteSpace(phoneNumber))
-            throw new Exception("Supplier phone number is required.");
+            throw new BusinessRuleException("Supplier phone number is required.");
         
         SupplierId = Guid.NewGuid();
         Name =name;

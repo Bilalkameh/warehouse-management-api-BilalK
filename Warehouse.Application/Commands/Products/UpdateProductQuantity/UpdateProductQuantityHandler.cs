@@ -1,5 +1,6 @@
 using MediatR;
 using Warehouse.Domain.Interfaces;
+using Warehouse.Application.Exceptions;
 
 namespace Warehouse.Application.Commands.Products.UpdateProductQuantity;
 
@@ -14,29 +15,13 @@ public class UpdateProductQuantityHandler : IRequestHandler<UpdateProductQuantit
 
     public async Task<UpdateProductQuantityResponse> Handle(UpdateProductQuantityRequest request, CancellationToken cancellationToken)
     {
-        var product = await _repository.GetByIdAsync(
-            request.ProductId,
-            cancellationToken);
+        var product = await _repository.GetByIdAsync(request.ProductId, cancellationToken);
 
         if (product == null)
-        {
-            return new UpdateProductQuantityResponse
-            {
-                Success = false
-            };
-        }
-
-        try
-        {
-            product.UpdateQuantity(request.Quantity);
-        }
-        catch (Exception)
-        {
-            return new UpdateProductQuantityResponse
-            {
-                Success = false
-            };
-        }
+            throw new NotFoundException("Product was not found.");
+        
+        
+        product.UpdateQuantity(request.Quantity);
 
         await _repository.UpdateAsync(product, cancellationToken);
 

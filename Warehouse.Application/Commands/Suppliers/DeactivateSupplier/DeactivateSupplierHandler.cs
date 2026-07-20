@@ -1,10 +1,11 @@
 using MediatR;
 using Warehouse.Domain.Interfaces;
+using Warehouse.Application.Exceptions;
+
 
 namespace Warehouse.Application.Commands.Suppliers.DeactivateSupplier;
 
-public class DeactivateSupplierHandler
-    : IRequestHandler<DeactivateSupplierRequest, DeactivateSupplierResponse>
+public class DeactivateSupplierHandler : IRequestHandler<DeactivateSupplierRequest, DeactivateSupplierResponse>
 {
     private readonly ISupplierRepository _repository;
 
@@ -18,12 +19,7 @@ public class DeactivateSupplierHandler
         var supplier = await _repository.GetByIdAsync(request.SupplierId, cancellationToken);
 
         if (supplier == null)
-        {
-            return new DeactivateSupplierResponse
-            {
-                Success = false
-            };
-        }
+            throw new NotFoundException("Supplier was not found.");
 
         supplier.Deactivate();
         await _repository.UpdateAsync(supplier, cancellationToken);

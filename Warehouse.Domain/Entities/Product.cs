@@ -1,3 +1,5 @@
+using Warehouse.Domain.Exceptions;
+
 namespace Warehouse.Domain.Entities;
 
 
@@ -32,19 +34,19 @@ public Product(
     DateTime expiryDate)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new Exception("Product name is required.");
+            throw new BusinessRuleException("Product name is required.");
 
 		if (string.IsNullOrWhiteSpace(sku))
-    		throw new Exception("SKU is required.");
+    		throw new BusinessRuleException("SKU is required.");
 
         if (price <= 0)
-            throw new Exception("Price must be greater than zero.");
+            throw new BusinessRuleException("Price must be greater than zero.");
 
         if (quantityInStock < 0)
-            throw new Exception("Quantity cannot be negative.");
+            throw new BusinessRuleException("Quantity cannot be negative.");
         
         if (supplier == null)
-            throw new ArgumentNullException(nameof(supplier));
+            throw new BusinessRuleException(nameof(supplier));
         
         Id = Guid.NewGuid();
         Name = name;
@@ -69,10 +71,10 @@ public Product(
     public void UpdatePrice(double newPrice)
     {
         if (IsArchived)
-            throw new Exception("Archived products cannot be updated.");
+            throw new BusinessRuleException("Archived products cannot be updated.");
 
         if (newPrice <= 0)
-            throw new Exception("Price must be greater than zero.");
+            throw new BusinessRuleException("Price must be greater than zero.");
         Price = newPrice;
         LastUpdatedAt = DateTime.UtcNow;
     }
@@ -81,9 +83,9 @@ public Product(
     public void UpdateQuantity(int newQuantity)
     {
         if (IsArchived)
-            throw new Exception("Archived products cannot be updated.");
+            throw new BusinessRuleException("Archived products cannot be updated.");
         if (newQuantity < 0)
-            throw new Exception("Quantity cannot be negative.");
+            throw new BusinessRuleException("Quantity cannot be negative.");
 
 
         QuantityInStock = newQuantity;
@@ -93,13 +95,13 @@ public Product(
 	public void AssignSupplier(Supplier supplier)
 	{
     	if (IsArchived)
-        	throw new Exception("Archived products cannot be updated.");
+        	throw new BusinessRuleException("Archived products cannot be updated.");
 
     	if (supplier == null)
-        	throw new ArgumentNullException(nameof(supplier));
+        	throw new BusinessRuleException(nameof(supplier));
 
     	if (!supplier.IsActive)
-        	throw new Exception("Cannot assign inactive supplier.");
+        	throw new BusinessRuleException("Cannot assign inactive supplier.");
 
         Supplier = supplier;
         SupplierId = supplier.SupplierId;

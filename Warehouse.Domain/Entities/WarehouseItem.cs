@@ -1,3 +1,5 @@
+using Warehouse.Domain.Exceptions;
+
 namespace Warehouse.Domain.Entities;
 
 // We will consider this as sort of the inventory aspect of the product
@@ -15,10 +17,10 @@ public class WarehouseItem
         string location)
     {
         if (productId == Guid.Empty)
-            throw new Exception("Product id is required.");
+            throw new BusinessRuleException("Product id is required.");
 
         if (string.IsNullOrWhiteSpace(location))
-            throw new Exception("Location is required.");
+            throw new BusinessRuleException("Location is required.");
 
         Id = Guid.NewGuid();
         ProductId = productId;

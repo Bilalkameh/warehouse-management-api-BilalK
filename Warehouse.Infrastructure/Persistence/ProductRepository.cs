@@ -67,4 +67,14 @@ public class ProductRepository : IProductRepository
 
         return await query.ToListAsync(cancellationToken);
     }
+    
+    //Stock adjustment endpoint
+    public async Task AdjustStockAsync(Product product, StockMovement movement, CancellationToken cancellationToken)
+    {
+        _context.Products.Update(product);
+
+        await _context.StockMovements.AddAsync(movement, cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

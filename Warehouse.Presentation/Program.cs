@@ -3,16 +3,36 @@ using Warehouse.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Warehouse.Infrastructure.Persistence;
 using Warehouse.Application.Mappings;
+using Warehouse.Presentation.Middleware;
+using Microsoft.AspNetCore.Mvc;
+using Warehouse.Presentation.Filters;
+using FluentValidation;
+using Warehouse.Application.Commands.Stock;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<WarehouseDbContext>(options =>
+builder.Services.AddDbContextFactory<WarehouseDbContext>(options =>
 {
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
-builder.Services.AddControllers();
+builder.Services.AddScoped<ActionLoggingFilter>();
+builder.Services.AddScoped<ModelValidationFilter>();
+
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.AddService<ActionLoggingFilter>();
+    options.Filters.AddService<ModelValidationFilter>();
+});
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -23,6 +43,8 @@ builder.Services.AddAutoMapper(
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
+builder.Services.AddScoped<IInventoryDashboardRepository, InventoryDashboardRepository>();
+builder.Services.AddScoped<IValidator<StockAdjustmentRequest>, StockAdjustmentRequestValidator>();
 
 // mediatr dependencies
 builder.Services.AddMediatR(configuration =>
@@ -31,6 +53,10 @@ builder.Services.AddMediatR(configuration =>
 });
     
 var app = builder.Build();
+
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RequestTimingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

@@ -21,10 +21,10 @@ public class SuppliersController : ControllerBase
 
     // 1. Get all suppliers
     [HttpGet]
-    public async Task<IActionResult> GetAllSuppliers()
+    public async Task<IActionResult> GetAllSuppliers(CancellationToken cancellationToken)
     {
         var request = new GetSuppliersRequest();
-        var suppliers = await _mediator.Send(request);
+        var suppliers = await _mediator.Send(request, cancellationToken);
 
         return Ok(suppliers);
     }
@@ -32,16 +32,14 @@ public class SuppliersController : ControllerBase
 
     // 2. Get supplier by id
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetSupplierById([FromRoute] Guid id)
+    public async Task<IActionResult> GetSupplierById([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new GetSupplierByIdRequest
         {
             SupplierId = id
         };
 
-        var supplier = await _mediator.Send(request);
-        if (supplier == null)
-            return NotFound("Supplier not found.");
+        var supplier = await _mediator.Send(request,  cancellationToken);
 
         return Ok(supplier);
     }
@@ -50,9 +48,9 @@ public class SuppliersController : ControllerBase
 
     // 3. Create supplier
     [HttpPost]
-    public async Task<IActionResult> CreateSupplier([FromBody] CreateSupplierRequest request)
+    public async Task<IActionResult> CreateSupplier([FromBody] CreateSupplierRequest request, CancellationToken cancellationToken)
     {
-        var supplier = await _mediator.Send(request);
+        var supplier = await _mediator.Send(request, cancellationToken);
 
         return CreatedAtAction(
             nameof(GetSupplierById),
@@ -62,16 +60,14 @@ public class SuppliersController : ControllerBase
     
     // 4. Deactivate supplier
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeactivateSupplier([FromRoute] Guid id)
+    public async Task<IActionResult> DeactivateSupplier([FromRoute] Guid id,  CancellationToken cancellationToken)
     {
         var request = new DeactivateSupplierRequest
         {
             SupplierId = id
         };
 
-        var result = await _mediator.Send(request);
-        if (!result.Success)
-            return NotFound("Supplier not found.");
+        await _mediator.Send(request,  cancellationToken);
 
         return Ok();
     }

@@ -1,5 +1,6 @@
 using MediatR;
 using Warehouse.Domain.Interfaces;
+using Warehouse.Application.Exceptions;
 
 namespace Warehouse.Application.Commands.Products.AssignSupplier;
 
@@ -20,25 +21,13 @@ public class AssignSupplierHandler : IRequestHandler<AssignSupplierRequest, Assi
 
         var supplier = await _supplierRepository.GetByIdAsync(request.SupplierId, cancellationToken);
 
-        if (product == null || supplier == null)
-        {
-            return new AssignSupplierResponse
-            {
-                Success = false
-            };
-        }
+        if (product == null)
+            throw new NotFoundException("Product was not found.");
 
-        try
-        {
-            product.AssignSupplier(supplier);
-        }
-        catch (Exception)
-        {
-            return new AssignSupplierResponse
-            {
-                Success = false
-            };
-        }
+        if (supplier == null)
+            throw new NotFoundException("Supplier was not found.");
+        
+        product.AssignSupplier(supplier);
 
         await _productRepository.UpdateAsync(product, cancellationToken);
 

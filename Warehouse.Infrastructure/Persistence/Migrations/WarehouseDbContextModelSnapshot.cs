@@ -92,6 +92,32 @@ namespace Warehouse.Infrastructure.Persistence.Migrations
                     b.ToTable("ProductImages");
                 });
 
+            modelBuilder.Entity("Warehouse.Domain.Entities.StockMovement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityChange")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("StockMovements");
+                });
+
             modelBuilder.Entity("Warehouse.Domain.Entities.Supplier", b =>
                 {
                     b.Property<Guid>("SupplierId")
@@ -140,6 +166,17 @@ namespace Warehouse.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("Warehouse.Domain.Entities.ProductImage", b =>
+                {
+                    b.HasOne("Warehouse.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Warehouse.Domain.Entities.StockMovement", b =>
                 {
                     b.HasOne("Warehouse.Domain.Entities.Product", "Product")
                         .WithMany()

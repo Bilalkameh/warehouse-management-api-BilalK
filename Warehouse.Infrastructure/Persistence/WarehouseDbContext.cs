@@ -16,4 +16,6 @@ public class WarehouseDbContext : DbContext
     public DbSet<Supplier> Suppliers => Set<Supplier>();
 
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+    
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
 }

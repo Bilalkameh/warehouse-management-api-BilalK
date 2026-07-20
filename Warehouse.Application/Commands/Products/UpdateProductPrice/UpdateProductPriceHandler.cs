@@ -1,5 +1,7 @@
 using MediatR;
 using Warehouse.Domain.Interfaces;
+using Warehouse.Application.Exceptions;
+
 
 namespace Warehouse.Application.Commands.Products.UpdateProductPrice;
 
@@ -14,29 +16,13 @@ public class UpdateProductPriceHandler : IRequestHandler<UpdateProductPriceReque
 
     public async Task<UpdateProductPriceResponse> Handle(UpdateProductPriceRequest request, CancellationToken cancellationToken)
     {
-        var product = await _repository.GetByIdAsync(
-            request.ProductId,
-            cancellationToken);
+        var product = await _repository.GetByIdAsync(request.ProductId, cancellationToken);
 
         if (product == null)
-        {
-            return new UpdateProductPriceResponse
-            {
-                Success = false
-            };
-        }
+            throw new NotFoundException("Product was not found.");
 
-        try
-        {
-            product.UpdatePrice(request.Price);
-        }
-        catch (Exception)
-        {
-            return new UpdateProductPriceResponse
-            {
-                Success = false
-            };
-        }
+        product.UpdatePrice(request.Price);
+
 
         await _repository.UpdateAsync(product, cancellationToken);
 

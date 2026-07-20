@@ -2,6 +2,7 @@ using AutoMapper;
 using MediatR;
 using Warehouse.Application.ViewModels;
 using Warehouse.Domain.Interfaces;
+using Warehouse.Application.Exceptions;
 
 namespace Warehouse.Application.Queries.Suppliers.GetSupplierById;
 
@@ -24,7 +25,7 @@ public class GetSupplierByIdHandler
         var supplier = await _repository.GetByIdAsync(request.SupplierId, cancellationToken);
 
         if (supplier == null)
-            return null;
+            throw new NotFoundException("Product was not found.");
 
         return _mapper.Map<SupplierViewModel>(supplier);
     }

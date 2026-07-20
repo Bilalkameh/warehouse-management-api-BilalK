@@ -10,4 +10,5 @@ public interface IProductRepository
     Task AddAsync(Product  product, CancellationToken cancellationToken);
     Task UpdateAsync(Product  product, CancellationToken cancellationToken);
 	Task<List<Product>> SearchAsync(string? name, string? supplier, CancellationToken cancellationToken);
+	Task AdjustStockAsync(Product product, StockMovement movement, CancellationToken cancellationToken);
 }
