@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
 using Warehouse.Application.Commands.Products.CreateProduct;
 using Warehouse.Application.Commands.Suppliers.CreateSupplier;
 using Warehouse.Application.Exceptions;
 using Warehouse.Application.Metadata;
-using Warehouse.Presentation;
+using Warehouse.Presentation.Resources;
 
 
 namespace Warehouse.Presentation.Controllers;
@@ -13,11 +12,10 @@ namespace Warehouse.Presentation.Controllers;
 [Route("api/metadata")]
 public class MetadataController : ControllerBase
 {
-    private readonly IStringLocalizer<SharedResources> _localizer;
 
-    public MetadataController(IStringLocalizer<SharedResources> localizer)
+    public MetadataController()
     {
-        _localizer = localizer;
+        
     }
     
     
@@ -35,6 +33,6 @@ public class MetadataController : ControllerBase
             return Ok(ValidationMetadataHelper.GetMetadata<CreateSupplierRequest>());
         }
 
-        throw new NotFoundException(_localizer["DtoNotFound"].Value);
+        throw new NotFoundException(SharedResources.DtoNotFound);
     }
 }

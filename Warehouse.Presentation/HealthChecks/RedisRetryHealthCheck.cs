@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Warehouse.Application.Cache;
 
 namespace Warehouse.Presentation.HealthChecks;
 
@@ -16,7 +17,7 @@ public class RedisRetryHealthCheck : IHealthCheck
         _logger = logger;
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken)
     {
         Exception? lastError = null;
 
@@ -24,7 +25,7 @@ public class RedisRetryHealthCheck : IHealthCheck
         {
             try
             {
-                await _cache.GetAsync("redis-health-check", cancellationToken);
+                await _cache.GetAsync(ProductCacheKeys.HealthCheck, cancellationToken);
 
                 return HealthCheckResult.Healthy($"Redis responded on attempt {attempt}.");
             }

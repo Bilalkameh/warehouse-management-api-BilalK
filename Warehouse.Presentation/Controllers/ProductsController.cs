@@ -10,6 +10,7 @@ using Warehouse.Application.Queries.Products.GetProductById;
 using Warehouse.Application.Queries.Products.GetProducts;
 using Warehouse.Application.Queries.Products.SearchProducts;
 using System.ComponentModel.DataAnnotations;
+using Warehouse.Presentation.Resources;
 
 namespace Warehouse.Presentation.Controllers;
 
@@ -79,13 +80,16 @@ public class ProductsController : ControllerBase
             new { id = product.Id },
             product);
     }
-
-
+    
     // 5. Update quantity
     [HttpPost("{id}/quantity")]
-    public async Task<IActionResult> UpdateQuantity([FromRoute] Guid id, 
-        [FromBody] [Range(0, int.MaxValue, ErrorMessage = "Quantity cannot be negative.")] int quantity,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UpdateQuantity(
+        [FromRoute] Guid id,
+        [FromBody]
+        [Range(0, int.MaxValue,
+            ErrorMessageResourceType = typeof(SharedResources),
+            ErrorMessageResourceName = nameof(SharedResources.QuantityCannotBeNegative))]
+        int quantity, CancellationToken cancellationToken = default)
     {
         var request = new UpdateProductQuantityRequest
         {
@@ -94,17 +98,20 @@ public class ProductsController : ControllerBase
         };
 
         await _mediator.Send(request, cancellationToken);
-        
+
         return Ok();
     }
-
-
+    
     // 6. Update price
     [HttpPost("{id}/price")]
-    public async Task<IActionResult> UpdatePrice([FromRoute] Guid id, [FromBody] 
-        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than zero.")] double price,
-        CancellationToken cancellationToken)
-    {    
+    public async Task<IActionResult> UpdatePrice(
+        [FromRoute] Guid id,
+        [FromBody]
+        [Range(0.01, double.MaxValue,
+            ErrorMessageResourceType = typeof(SharedResources),
+            ErrorMessageResourceName = nameof(SharedResources.PriceMustBeGreaterThanZero))]
+        double price, CancellationToken cancellationToken)
+    {
         var request = new UpdateProductPriceRequest
         {
             ProductId = id,
@@ -115,6 +122,7 @@ public class ProductsController : ControllerBase
 
         return Ok();
     }
+    
 
 
     // 7. Delete product (soft delete)

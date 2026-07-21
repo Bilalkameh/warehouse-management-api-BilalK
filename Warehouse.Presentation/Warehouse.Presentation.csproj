@@ -31,4 +31,18 @@
     <ProjectReference Include="..\Warehouse.Infrastructure\Warehouse.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\SharedResources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>SharedResources.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Warehouse.Presentation.Resources</CustomToolNamespace>
+    </EmbeddedResource>
+
+    <Compile Update="Resources\SharedResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SharedResources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
 </Project>

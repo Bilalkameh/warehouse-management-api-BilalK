@@ -176,6 +176,7 @@ var productExpirySchedule =
     app.Configuration["BackgroundJobs:ProductExpirySchedule"] ?? Cron.Daily();
 
 RecurringJob.AddOrUpdate<ProductExpiryJob>("product-expiry-check",
-    job => job.CheckProductExpiryAsync(),
+    job => job.CheckProductExpiryAsync(CancellationToken.None), 
     productExpirySchedule);
+
 app.Run();

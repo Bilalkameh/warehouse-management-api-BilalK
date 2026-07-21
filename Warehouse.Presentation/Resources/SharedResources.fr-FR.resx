@@ -14,9 +14,18 @@
     </resheader>
 
     <data name="WelcomeMessage" xml:space="preserve">
-    <value>Bienvenue dans l'API WarehouseManagement.</value>
-  </data>
+        <value>Bienvenue dans l'API WarehouseManagement.</value>
+    </data>
+
     <data name="DtoNotFound" xml:space="preserve">
-  <value>DTO introuvable.</value>
+        <value>DTO introuvable.</value>
+    </data>
+
+    <data name="QuantityCannotBeNegative" xml:space="preserve">
+        <value>La quantité ne peut pas etre négative.</value>
+    </data>
+
+    <data name="PriceMustBeGreaterThanZero" xml:space="preserve">
+    <value>Le prix doit être supérieur à zéro.</value>
 </data>
 </root>

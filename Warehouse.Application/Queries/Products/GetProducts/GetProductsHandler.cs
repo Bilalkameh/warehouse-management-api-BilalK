@@ -32,7 +32,7 @@ public class GetProductsHandler
             ? ProductCacheKeys.Available
             : ProductCacheKeys.All;
         
-        var cachedProducts = await _cache.GetAsync(ProductCacheKeys.All, cancellationToken);
+        var cachedProducts = await _cache.GetAsync(cacheKey, cancellationToken);
         
         if (cachedProducts != null)
         {

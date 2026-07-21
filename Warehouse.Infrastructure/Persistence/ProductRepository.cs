@@ -74,7 +74,13 @@ public class ProductRepository : IProductRepository
         _context.Products.Update(product);
 
         await _context.StockMovements.AddAsync(movement, cancellationToken);
-
         await _context.SaveChangesAsync(cancellationToken);
+    }
+    
+    public async Task<List<Product>> GetExpiringProductsAsync(DateTime date, CancellationToken cancellationToken)
+    {
+        return await _context.Products
+            .Where(product => product.ExpiryDate <= date)
+            .ToListAsync(cancellationToken);
     }
 }
