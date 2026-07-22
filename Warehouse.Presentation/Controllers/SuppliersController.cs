@@ -11,6 +11,7 @@ using Warehouse.Application.Commands.Suppliers.DeleteSupplierDocument;
 using Warehouse.Application.Commands.Suppliers.ReplaceSupplierDocument;
 using Warehouse.Application.Queries.Suppliers.DownloadSupplierDocument;
 using Warehouse.Application.Queries.Suppliers.GetSupplierDocuments;
+using Warehouse.Application.Queries.Suppliers.GetSupplierDocumentUrl;
 
 namespace Warehouse.Presentation.Controllers;
 
@@ -193,6 +194,20 @@ public class SuppliersController : ControllerBase
 
         return Ok();
     }
+    // 10. Get temporary supplier document URL
+    [HttpGet("documents/{documentId}/url")]
+    public async Task<IActionResult> GetSupplierDocumentUrl([FromRoute] Guid documentId, CancellationToken cancellationToken)
+    {
+        var request = new GetSupplierDocumentUrlRequest
+        {
+            DocumentId = documentId
+        };
+
+        var result = await _mediator.Send(request, cancellationToken);
+
+        return Ok(result);
+    }
+    
     
     
 }

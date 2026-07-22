@@ -17,6 +17,7 @@ using Warehouse.Application.Commands.Products.DeleteProductImage;
 using Warehouse.Application.Commands.Products.ReplaceProductImage;
 using Warehouse.Application.Queries.Products.DownloadProductImage;
 using Warehouse.Application.Queries.Products.GetProductImages;
+using Warehouse.Application.Queries.Products.GetProductImageUrl;
 
 namespace Warehouse.Presentation.Controllers;
 
@@ -317,6 +318,20 @@ public class ProductsController : ControllerBase
         await _mediator.Send(request, cancellationToken);
 
         return Ok();
+    }
+    
+    // 15. Get temporary product image URL
+    [HttpGet("images/{imageId}/url")]
+    public async Task<IActionResult> GetProductImageUrl([FromRoute] Guid imageId, CancellationToken cancellationToken)
+    {
+        var request = new GetProductImageUrlRequest
+        {
+            ImageId = imageId
+        };
+
+        var result = await _mediator.Send(request, cancellationToken);
+
+        return Ok(result);
     }
     
 }
