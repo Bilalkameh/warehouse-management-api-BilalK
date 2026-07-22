@@ -20,14 +20,16 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using Warehouse.Application.BackgroundJobs;
 using Warehouse.Presentation.HealthChecks;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Warehouse.Presentation.Authorization;
+using Microsoft.OpenApi.Models;
+using Warehouse.Infrastructure.Storage;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-var logPath = Path.Combine(
-    builder.Environment.ContentRootPath,
-    "Logs",
-    "warehouse-log-.txt");
+var logPath = Path.Combine(builder.Environment.ContentRootPath, "Logs", "warehouse-log-.txt");
 
 builder.Host.UseSerilog((context, configuration) =>
 {
@@ -45,7 +47,6 @@ builder.Services.AddDbContextFactory<WarehouseDbContext>(options =>
 builder.Services.AddScoped<ActionLoggingFilter>();
 builder.Services.AddScoped<ModelValidationFilter>();
 
-
 builder.Services.AddControllers(options =>
 {
     options.Filters.AddService<ActionLoggingFilter>();
@@ -57,29 +58,54 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = true;
 });
 
-
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.OperationFilter<AcceptLanguageHeaderOperationFilter>();
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter your Firebase ID token."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
-builder.Services.AddAutoMapper(
-    configuration => { }, typeof(MappingProfile));
+builder.Services.AddAutoMapper(configuration => { }, typeof(MappingProfile));
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
+builder.Services.AddScoped<ISupplierDocumentRepository, SupplierDocumentRepository>();
 builder.Services.AddScoped<IInventoryDashboardRepository, InventoryDashboardRepository>();
 builder.Services.AddScoped<IValidator<StockAdjustmentRequest>, StockAdjustmentRequestValidator>();
 
-// mediatr dependencies
+// MediatR dependencies
 builder.Services.AddMediatR(configuration =>
 {
     configuration.RegisterServicesFromAssemblyContaining<CreateProductRequest>();
 });
-    
-//Localization
+
+// Localization
 builder.Services.AddLocalization(options =>
 {
     options.ResourcesPath = "Resources";
@@ -98,19 +124,16 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedUICultures = supportedCultures;
 });
 
-//Caching
+// Caching
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration =
-        builder.Configuration.GetConnectionString("Redis");
-
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
     options.InstanceName = "Warehouse_";
 });
 
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
-
-//Health checks
+// Health checks
 builder.Services
     .AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "PostgreSQL")
@@ -123,21 +146,74 @@ builder.Services
     })
     .AddInMemoryStorage();
 
-
 // Background jobs
 builder.Services.AddHangfire(configuration =>
 {
     configuration.UsePostgreSqlStorage(options =>
     {
-        options.UseNpgsqlConnection(
-            builder.Configuration.GetConnectionString(
-                "DefaultConnection"));
+        options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"));
     });
 });
 
 builder.Services.AddHangfireServer();
 builder.Services.AddScoped<ProductExpiryJob>();
 
+
+// Minio storage
+var minioEndpoint = builder.Configuration["Minio:Endpoint"]
+                    ?? throw new InvalidOperationException("MinIO Endpoint is not configured.");
+
+var minioAccessKey = builder.Configuration["Minio:AccessKey"]
+                     ?? throw new InvalidOperationException("MinIO AccessKey is not configured.");
+
+var minioSecretKey = builder.Configuration["Minio:SecretKey"]
+                     ?? throw new InvalidOperationException("MinIO SecretKey is not configured.");
+
+var minioBucketName = builder.Configuration["Minio:BucketName"]
+                      ?? throw new InvalidOperationException("MinIO BucketName is not configured.");
+
+var minioUseSsl = builder.Configuration.GetValue<bool>("Minio:UseSSL");
+
+builder.Services.AddSingleton<IFileStorageService>(_ => new MinioStorageService(minioEndpoint, minioAccessKey, minioSecretKey, minioBucketName, minioUseSsl));
+
+
+// Firebase authentication
+builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
+var firebaseProjectId = builder.Configuration["Firebase:ProjectId"]
+                        ?? throw new InvalidOperationException("Firebase ProjectId is not configured.");
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = $"https://securetoken.google.com/{firebaseProjectId}";
+
+        options.Audience = firebaseProjectId;
+
+        options.MapInboundClaims = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = $"https://securetoken.google.com/{firebaseProjectId}",
+
+            ValidateAudience = true,
+            ValidAudience = firebaseProjectId,
+            ValidateLifetime = true,
+            RoleClaimType = "role",
+            NameClaimType = "email"
+        };
+    });
+
+
+// Authorization 
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthorizationPolicies.Admin,policy => policy.RequireRole("admin"));
+
+    options.AddPolicy(AuthorizationPolicies.User,policy => policy.RequireRole("admin", "user"));
+});
 
 
 var app = builder.Build();
@@ -156,13 +232,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// authentication happens before authorization
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
-//Map health checks
+// map healthChecks
 app.MapHealthChecks("/health", new HealthCheckOptions
-    {
-        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-    });
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.MapHealthChecksUI(options =>
 {
@@ -170,13 +249,10 @@ app.MapHealthChecksUI(options =>
     options.ApiPath = "/health-ui-api";
 });
 
+var productExpirySchedule = app.Configuration["BackgroundJobs:ProductExpirySchedule"] ?? Cron.Daily();
 
-
-var productExpirySchedule =
-    app.Configuration["BackgroundJobs:ProductExpirySchedule"] ?? Cron.Daily();
-
-RecurringJob.AddOrUpdate<ProductExpiryJob>("product-expiry-check",
-    job => job.CheckProductExpiryAsync(CancellationToken.None), 
+RecurringJob.AddOrUpdate<ProductExpiryJob>("product-expiry-check", 
+    job => job.CheckProductExpiryAsync(CancellationToken.None),
     productExpirySchedule);
 
 app.Run();
