@@ -1,11 +1,14 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Warehouse.Application.Commands.Stock;
+using Microsoft.AspNetCore.Authorization;
+using Warehouse.Presentation.Authorization;
 
 namespace Warehouse.Presentation.Controllers;
 
 [ApiController]
 [Route("api/stock-adjustments")]
+[Authorize(Policy = AuthorizationPolicies.Admin)]
 public class StockAdjustmentsController : ControllerBase
 {
     private readonly IMediator _mediator;
