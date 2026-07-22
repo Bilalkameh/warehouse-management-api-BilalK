@@ -136,8 +136,12 @@ builder.Services.AddScoped<ICacheService, RedisCacheService>();
 // Health checks
 builder.Services
     .AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "PostgreSQL")
-    .AddCheck<RedisRetryHealthCheck>("Redis");
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "PostgreSQL")
+    .AddCheck<RedisRetryHealthCheck>("Redis")
+    .AddCheck<MinioHealthCheck>("MinIO");
+
 
 builder.Services
     .AddHealthChecksUI(options =>
@@ -178,7 +182,6 @@ builder.Services.AddSingleton<IFileStorageService>(_ => new MinioStorageService(
 
 
 // Firebase authentication
-builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
 var firebaseProjectId = builder.Configuration["Firebase:ProjectId"]
                         ?? throw new InvalidOperationException("Firebase ProjectId is not configured.");
 
@@ -214,6 +217,8 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy(AuthorizationPolicies.User,policy => policy.RequireRole("admin", "user"));
 });
+
+builder.Services.AddHttpClient();
 
 
 var app = builder.Build();
