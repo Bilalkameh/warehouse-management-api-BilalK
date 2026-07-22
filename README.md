@@ -333,7 +333,141 @@ Then open localhost:5035
 # New endpoints
 - POST /api/stock-adjustments -> Increase or reduce a product's quantity and save the movement
 - GET /api/inventory/dashboard -> Return total products, available products, and active suppliers
-- GET /api/metadata/validation/{dtoName} -> Return validation metadata for an approved DTO
+
+
+----------------------------------------------------------------------------------------
+
+(Session-07) Firebase Authentication, Authorization and MinIO Object Storage
+
+In this session, I added authentication and authorization to the Warehouse Management API using Firebase, and I introduced MinIO for storing warehouse files.
+
+# Firebase Authentication
+
+A Firebase project was created with Email/Password authentication enabled. I created 2 users an admin user and a normal user.
+
+Custom Firebase claims were added to identify their roles:
+
+admin -> role = admin
+user -> role = user
+
+The Firebase Admin SDK was used during setup to assign these custom claims. The service account file is stored outside the repository and is never committed.
+When a user signs in, Firebase returns an ID token. ASP.NET Core validates this JWT using the Firebase project ID, issuer, audience and expiration time. The custom role claim is then used directly by the .NET authorization system.
+
+# Authorization
+
+Two policies were created:
+
+- AdminPolicy
+- UserPolicy
+
+AdminPolicy requires the admin role.
+UserPolicy accepts both user and admin, because admins should still be able to perform normal read operations.
+
+The normal user has read-only access to products, suppliers, the inventory dashboard and allowed files. Admin users can also create, update and delete warehouse data, adjust stock and manage files.
+
+This was tested with the expected HTTP behavior:
+
+- No valid token -> 401 Unauthorized
+- Valid user without enough permission -> 403 Forbidden
+
+I also added a new endpoint
+GET /api/auth/me
+It returns the Firebase UID, email and role from the validated token. I used this mainly to confirm that Firebase authentication was correctly connected to the ASP.NET Core authentication system.
+
+
+# Swagger Authentication
+
+Swagger was configured to support Bearer authentication.
+After signing in through Firebase and receiving an ID token, the token can be added using the authorize button. Swagger then sends it in the Authorization header when calling protected endpoints.
+
+
+# MinIO Setup
+
+The MinIO API is available on port 9000 and the MinIO Console on port 9001. The project uses a private bucket called:
+warehouse-assets
+
+A Docker volume is also used so uploaded files remain available even if the MinIO container is stopped or recreated.
+to keep the AccessKey and SecretKey safe they are stored using .NET User Secrets instead of being committed to the repository. Docker credentials are also read from a local .env file which is ignored by Git.
+
+
+# Storage Architecture
+
+I created an IFileStorageService interface inside the Application layer.
+The interface contains the file operations that the application needs, such as upload, download and delete. The actual MinIO implementation is inside the Infrastructure layer in MinioStorageService.
+This means the Application layer does not depend directly on MinIO. It only knows that a file storage service exists. MinIO-specific code such as the MinIO client, bucket operations and object arguments stays inside Infrastructure.
+
+
+
+# Product Images
+
+The ProductImage Domain entity still contains the file name and a generic FilePath. I did not add MinIO-specific properties to the Domain because the Domain layer should describe the warehouse business model and should not depend on a specific storage provider.
+
+
+The actual image is stored in MinIO, while PostgreSQL stores the ProductImage metadata.
+
+Product images support:
+- Upload
+- List
+- Download
+- Replace
+- Delete
+
+JPEG and PNG images are accepted with a maximum size of 5 MB.
+Normal users can list and download images, while upload, replace and delete operations require AdminPolicy.
+
+
+# Supplier Documents
+
+I added Supplier documents as the second file type stored in MinIO.
+A new SupplierDocument Domain entity and ISupplierDocumentRepository were created. The EF Core implementation is inside Infrastructure in SupplierDocumentRepository.
+
+A new EF Core migration was created to add the SupplierDocuments table with a foreign key to Suppliers.
+Only PDF documents are accepted, with a maximum size of 10 MB and aupplier documents support upload, list, download, replace and delete operations. Obviously users only have read endpoints and admins have access to all.
+
+
+
+# New File Endpoints
+
+Product Images:
+- POST /api/products/{id}/image
+- GET /api/products/{points
+
+Product Images:
+- POST /api/products/{id}/image
+- GET /api/products/{id}/images
+- GET /api/products/images/{imageId}/download
+- PUT /api/products/images/{imageId}
+- DELETE /api/products/images/{imageId}
+
+Supplier Documents:
+- POST /api/suppliers/{id}/documents
+- GET /api/suppliers/{id}/documents
+- GET /api/suppliers/documents/{documentId}/download
+- PUT /api/suppliers/documents/{documentId}
+- DELETE /api/suppliers/documents/{documentId}
+
+Authentication:
+- GET /api/auth/me
+
+
+# Run instructions
+
+Make sure Docker Desktop is running.
+Start PostgreSQL and Redis if they are stopped.
+
+Start MinIO:
+docker compose up -d
+Apply the latest migration:
+dotnet ef database update --project Warehouse.Infrastructure --startup-project Warehouse.Presentation --context WarehouseDbContext
+
+
+Then run:
+dotnet restore
+dotnet build WarehouseManagement.sln
+dotnet run --project Warehouse.Presentation
+
+Swagger: localhost:5035
+MinIO Console: localhost:9001
 
 # Screenshots
 In the PR description
