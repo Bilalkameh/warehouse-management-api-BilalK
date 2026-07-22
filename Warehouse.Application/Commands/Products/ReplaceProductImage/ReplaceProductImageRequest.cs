@@ -1,10 +1,10 @@
 using MediatR;
 
-namespace Warehouse.Application.Commands.Products.AddProductImage;
+namespace Warehouse.Application.Commands.Products.ReplaceProductImage;
 
-public class AddProductImageRequest : IRequest<AddProductImageResponse>
+public class ReplaceProductImageRequest : IRequest<ReplaceProductImageResponse>
 {
-    public Guid ProductId { get; set; }
+    public Guid ImageId { get; set; }
 
     public string FileName { get; set; } = string.Empty;
 
