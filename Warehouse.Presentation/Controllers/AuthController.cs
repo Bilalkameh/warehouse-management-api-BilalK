@@ -9,7 +9,7 @@ namespace Warehouse.Presentation.Controllers;
 public class AuthController : ControllerBase
 {
     [Authorize]
-    [HttpGet("me")]
+    [HttpGet("current-user")]
     public IActionResult GetCurrentUser()
     {
         return Ok(new

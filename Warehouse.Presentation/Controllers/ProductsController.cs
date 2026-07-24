@@ -189,7 +189,7 @@ public class ProductsController : ControllerBase
         return Ok();
     }
     
-    // 8. Upload image
+    // 10. Upload image
     [HttpPost("{id}/image")]
     [Authorize(Policy = AuthorizationPolicies.Admin)]
     public async Task<IActionResult> UploadImage([FromRoute] Guid id, IFormFile? file, CancellationToken cancellationToken)

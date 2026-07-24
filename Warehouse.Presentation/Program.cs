@@ -24,7 +24,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Warehouse.Presentation.Authorization;
 using Microsoft.OpenApi.Models;
-using Warehouse.Infrastructure.Storage;
+using Warehouse.Infrastructure;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -163,23 +163,7 @@ builder.Services.AddHangfireServer();
 builder.Services.AddScoped<ProductExpiryJob>();
 
 
-// Minio storage
-var minioEndpoint = builder.Configuration["Minio:Endpoint"]
-                    ?? throw new InvalidOperationException("MinIO Endpoint is not configured.");
-
-var minioAccessKey = builder.Configuration["Minio:AccessKey"]
-                     ?? throw new InvalidOperationException("MinIO AccessKey is not configured.");
-
-var minioSecretKey = builder.Configuration["Minio:SecretKey"]
-                     ?? throw new InvalidOperationException("MinIO SecretKey is not configured.");
-
-var minioBucketName = builder.Configuration["Minio:BucketName"]
-                      ?? throw new InvalidOperationException("MinIO BucketName is not configured.");
-
-var minioUseSsl = builder.Configuration.GetValue<bool>("Minio:UseSSL");
-
-builder.Services.AddSingleton<IFileStorageService>(_ => new MinioStorageService(minioEndpoint, minioAccessKey, minioSecretKey, minioBucketName, minioUseSsl));
-
+builder.Services.AddMinioStorage(builder.Configuration);
 
 // Firebase authentication
 var firebaseProjectId = builder.Configuration["Firebase:ProjectId"]
