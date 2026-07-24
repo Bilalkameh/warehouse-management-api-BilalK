@@ -18,4 +18,6 @@ public class WarehouseDbContext : DbContext
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    
+    public DbSet<SupplierDocument> SupplierDocuments => Set<SupplierDocument>();
 }

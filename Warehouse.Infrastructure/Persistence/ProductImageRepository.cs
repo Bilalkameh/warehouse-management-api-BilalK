@@ -29,4 +29,28 @@ public class ProductImageRepository : IProductImageRepository
             .Where(image => image.ProductId == productId)
             .ToListAsync(cancellationToken);
     }
+    
+    public async Task<ProductImage?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _context.ProductImages
+            .FirstOrDefaultAsync(image => image.Id == id, cancellationToken);
+    }
+
+    public async Task DeleteAsync(ProductImage image, CancellationToken cancellationToken)
+    {
+        _context.ProductImages.Remove(image);
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task ReplaceAsync(ProductImage oldImage, ProductImage newImage, CancellationToken cancellationToken)
+    {
+        _context.ProductImages.Remove(oldImage);
+
+        await _context.ProductImages.AddAsync(newImage, cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }
+    
+    
