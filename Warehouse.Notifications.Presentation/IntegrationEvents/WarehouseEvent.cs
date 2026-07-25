@@ -1,9 +1,9 @@
-namespace Warehouse.Notifications.Api.IntegrationEvents;
+namespace Warehouse.Notifications.Presentation.IntegrationEvents;
 
 public class WarehouseEvent
 {
-    public Guid EventId { get; set; } = Guid.NewGuid();
-    public DateTime EventTime { get; set; } = DateTime.UtcNow;
+    public Guid EventId { get; set; }
+    public DateTime EventTime { get; set; }
     public string CorrelationId { get; set; } = string.Empty;
     public string EventType { get; set; } = string.Empty;
     public Guid RelatedEntityId { get; set; }

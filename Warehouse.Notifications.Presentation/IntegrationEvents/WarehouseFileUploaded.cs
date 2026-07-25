@@ -1,14 +1,7 @@
-namespace Warehouse.Notifications.Api.IntegrationEvents;
+namespace Warehouse.Notifications.Presentation.IntegrationEvents;
 
 public class WarehouseFileUploaded : WarehouseEvent
 {
-    public WarehouseFileUploaded()
-    {
-        EventType = nameof(WarehouseFileUploaded);
-        RelatedEntityType = "SupplierDocument";
-        Severity = "Information";
-    }
-
     public Guid SupplierId { get; set; }
     public string FileName { get; set; } = string.Empty;
     public string FilePath { get; set; } = string.Empty;
