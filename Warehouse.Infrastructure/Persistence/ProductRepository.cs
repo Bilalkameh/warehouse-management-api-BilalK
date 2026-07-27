@@ -83,4 +83,9 @@ public class ProductRepository : IProductRepository
             .Where(product => product.ExpiryDate <= date)
             .ToListAsync(cancellationToken);
     }
+    
+    public async Task<bool> ExistsBySkuAsync(string sku, CancellationToken cancellationToken)
+    {
+        return await _context.Products.AnyAsync(product => product.SKU == sku, cancellationToken);
+    }
 }

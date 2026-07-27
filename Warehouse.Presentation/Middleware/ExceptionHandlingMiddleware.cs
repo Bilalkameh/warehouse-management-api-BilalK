@@ -42,6 +42,14 @@ public class ExceptionHandlingMiddleware
             code = "NOT_FOUND";
             message = exception.Message;
         }
+        
+        else if (exception is ConflictException)
+        {
+            statusCode = StatusCodes.Status409Conflict;
+            code = "CONFLICT";
+            message = exception.Message;
+        }
+        
         else if (exception is ValidationException validationException)
         {
             statusCode = StatusCodes.Status400BadRequest;
