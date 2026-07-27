@@ -11,6 +11,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Warehouse.Infrastructure", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Warehouse.Presentation", "Warehouse.Presentation\Warehouse.Presentation.csproj", "{4BED185E-B96B-4178-B21E-838DCDEF3B16}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{FE99C2EB-4E2D-4730-9789-C91C28530DC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Warehouse.Api.UnitTests", "tests\Warehouse.Api.UnitTests\Warehouse.Api.UnitTests.csproj", "{E0BD3511-B30C-48C1-8445-73A16BA9D040}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Warehouse.Api.IntegrationTests", "tests\Warehouse.Api.IntegrationTests\Warehouse.Api.IntegrationTests.csproj", "{75F654A8-A755-4E5E-B11E-E894EA90CF35}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +42,17 @@ Global
 		{4BED185E-B96B-4178-B21E-838DCDEF3B16}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4BED185E-B96B-4178-B21E-838DCDEF3B16}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4BED185E-B96B-4178-B21E-838DCDEF3B16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0BD3511-B30C-48C1-8445-73A16BA9D040}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0BD3511-B30C-48C1-8445-73A16BA9D040}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0BD3511-B30C-48C1-8445-73A16BA9D040}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0BD3511-B30C-48C1-8445-73A16BA9D040}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75F654A8-A755-4E5E-B11E-E894EA90CF35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75F654A8-A755-4E5E-B11E-E894EA90CF35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75F654A8-A755-4E5E-B11E-E894EA90CF35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75F654A8-A755-4E5E-B11E-E894EA90CF35}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E0BD3511-B30C-48C1-8445-73A16BA9D040} = {FE99C2EB-4E2D-4730-9789-C91C28530DC6}
+		{75F654A8-A755-4E5E-B11E-E894EA90CF35} = {FE99C2EB-4E2D-4730-9789-C91C28530DC6}
 	EndGlobalSection
 EndGlobal
