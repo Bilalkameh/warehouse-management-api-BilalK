@@ -430,7 +430,7 @@ Only PDF documents are accepted, with a maximum size of 10 MB and aupplier docum
 
 Product Images:
 - POST /api/products/{id}/image
-- GET /api/products/{points
+- GET /api/products/{points}
 
 Product Images:
 - POST /api/products/{id}/image
@@ -447,7 +447,7 @@ Supplier Documents:
 - DELETE /api/suppliers/documents/{documentId}
 
 Authentication:
-- GET /api/auth/me
+- GET /api/auth/current-user
 
 
 # Run instructions
@@ -471,3 +471,46 @@ MinIO Console: localhost:9001
 
 # Screenshots
 In the PR description
+
+
+----------------------------------------------------------------------------------------
+
+# Session 08 - Notification Service and RabbitMQ
+
+For this lab I implemented the Notification service as a microservice (decoupling).
+The idea behind how this fits in to our project is basically. The Warehouse API publishes business events to RabbitMQ and the Notification service consumes them and stores the notification records.
+This flow supports two main notifications StockLowDetected which is published when a product's stock changes from a value higher than the configured threshold to a value lower than the threshold, this value is 10.
+WarehouseFileUploaded is published when a supplier document gets uploaded. Both Events use the same warehouse.events topic exchange.
+The notification service stores its records in WarehouseNotificationsDb which is a new DB that created using an EF core migration. This is better because there is less coupling and now any changes to each solution Db will not affect the other Db at all.
+
+## Running the services
+
+First of all make sure Postgres , Redis and MinIo are already running , then start RabbitMq from the repo root using:
+docker compose -f docker-compose.rabbitmq.yml up -d
+
+RabbitMQ accepts on port 5672 the console is available at /localhost:15672 with username and password "warehouse"
+Afterwards run each solution in 2 seperate terminals:
+
+dotnet run --project Warehouse.Presentation\Warehouse.Presentation.csproj
+dotnet run --project Warehouse.Notifications.Presentation\Warehouse.Notifications.Presentation.csproj
+The Warehouse API Swagger is available at localhost:5035/swagger and the Notification Service Swagger is at localhost:5062/swagger
+
+## message names, exchange name, queue names, and routing keys
+
+Both message use the same exchange : warehouse.events 
+And the same queue : notifications.warehouse-events
+
+StockLowDetected => key: stock.low
+WarehouseFileUploaded => key : file.uploaded
+
+## Testing 
+
+First we have to authorize the swagger API with admin token. I'm assuming i don't have to send the API key so i will describe how i tested and provide screenshots in the PR description.
+
+First use "GET /api/products" to choose a product then call "POST /api/stock-adjustments" or "POST/api/{id}/quantity" to make a product's quantity below 10. 
+This publishes StockLowDetected with the stock.low routing key
+
+Next use "GET /api/suppliers" to choose an active supplier and upload a small pdf using "POST /api/suppliers/{id}/documents". If it succeeds it will publish WarehouseFileUploaded with the file.uploaded routing key.
+Then In the RabbitMQ console you can check verify that "warehouse.events" is a topic exchange and that "notifications.warehouse-events" is bound with both routing keys. With the Notification Service running, the messages should get consumed and the queue should returns to zero. If you want to see both messages waiting in the queue, stop the Notification Service before triggering the two actions, confirm that the queue has two ready messages, then start it again.
+
+Finally open the Notification Service Swagger and call GET /api/notifications to verify that one that the notifications were created you can Copy a notification id and call PUT /api/notifications/{id}/read this should change the status to "Read" and a new timestamp value of "ReadAt". 

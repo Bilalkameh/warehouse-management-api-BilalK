@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Warehouse.Application.Interfaces;
 using Warehouse.Infrastructure.Storage;
+using Warehouse.Infrastructure.Messaging;
 
 namespace Warehouse.Infrastructure;
 
@@ -24,6 +25,37 @@ public static class DependencyInjection
         var useSsl = bool.TryParse(configuration["Minio:UseSSL"], out var parsedUseSsl) && parsedUseSsl;
 
         services.AddSingleton<IFileStorageService>(_ => new MinioStorageService(endpoint, accessKey, secretKey, bucketName, useSsl));
+
+        return services;
+    }
+    
+    public static IServiceCollection AddRabbitMqMessaging(this IServiceCollection services, IConfiguration configuration)
+    {
+        var section = configuration.GetSection(RabbitMqSettings.SectionName);
+
+        if (!int.TryParse(section["Port"], out var port))
+        {
+            throw new InvalidOperationException("RabbitMQ Port is not configured correctly.");
+        }
+
+        var settings = new RabbitMqSettings
+        {
+            HostName = section["HostName"]
+                       ?? throw new InvalidOperationException("RabbitMQ HostName is not configured."),
+
+            Port = port,
+
+            UserName = section["UserName"]
+                       ?? throw new InvalidOperationException("RabbitMQ UserName is not configured."),
+
+            Password = section["Password"]
+                       ?? throw new InvalidOperationException("RabbitMQ Password is not configured."),
+
+            ExchangeName = section["ExchangeName"]
+                           ?? throw new InvalidOperationException("RabbitMQ ExchangeName is not configured.")
+        };
+
+        services.AddSingleton<IWarehouseEventPublisher>(_ => new RabbitMqEventPublisher(settings));
 
         return services;
     }

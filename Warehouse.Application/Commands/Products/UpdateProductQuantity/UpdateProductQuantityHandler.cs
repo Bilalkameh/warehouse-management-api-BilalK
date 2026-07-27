@@ -3,6 +3,7 @@ using Warehouse.Application.Cache;
 using Warehouse.Domain.Interfaces;
 using Warehouse.Application.Exceptions;
 using Warehouse.Application.Interfaces;
+using Warehouse.Application.Services;
 
 namespace Warehouse.Application.Commands.Products.UpdateProductQuantity;
 
@@ -10,11 +11,13 @@ public class UpdateProductQuantityHandler : IRequestHandler<UpdateProductQuantit
 {
     private readonly IProductRepository _repository;
     private readonly ICacheService _cache;
+    private readonly LowStockEventService _lowStockEventService;
 
-    public UpdateProductQuantityHandler(IProductRepository repository, ICacheService cache)
+    public UpdateProductQuantityHandler(IProductRepository repository, ICacheService cache, LowStockEventService lowStockEventService)
     {
         _repository = repository;
         _cache = cache;
+        _lowStockEventService = lowStockEventService;
         
     }
 
@@ -26,9 +29,13 @@ public class UpdateProductQuantityHandler : IRequestHandler<UpdateProductQuantit
             throw new NotFoundException("Product was not found.");
         
         
+        var previousQuantity = product.QuantityInStock;
+
         product.UpdateQuantity(request.Quantity);
 
         await _repository.UpdateAsync(product, cancellationToken);
+        
+        await _lowStockEventService.PublishIfStockBecameLowAsync(product, previousQuantity, cancellationToken);
         
         await _cache.RemoveAsync(ProductCacheKeys.ById(product.Id), cancellationToken);
         await _cache.RemoveAsync(ProductCacheKeys.All, cancellationToken);

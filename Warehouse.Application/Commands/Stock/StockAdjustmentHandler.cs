@@ -8,6 +8,7 @@ using Warehouse.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 using Warehouse.Application.Cache;
 using Warehouse.Application.Interfaces;
+using Warehouse.Application.Services;
 
 namespace Warehouse.Application.Commands.Stock;
 
@@ -18,15 +19,17 @@ public class StockAdjustmentHandler : IRequestHandler<StockAdjustmentRequest, Pr
     private readonly IMapper _mapper;
     private readonly ILogger<StockAdjustmentHandler> _logger;
     private readonly ICacheService _cache;
+    private readonly LowStockEventService _lowStockEventService;
 
     public StockAdjustmentHandler(IProductRepository productRepository, IValidator<StockAdjustmentRequest> validator, 
-        IMapper mapper, ILogger<StockAdjustmentHandler> logger,  ICacheService cache)
+        IMapper mapper, ILogger<StockAdjustmentHandler> logger,  ICacheService cache, LowStockEventService lowStockEventService)
     {
         _productRepository = productRepository;
         _validator = validator;
         _mapper = mapper;
         _logger = logger;
         _cache = cache;
+        _lowStockEventService = lowStockEventService;
     }
 
     public async Task<ProductViewModel> Handle(StockAdjustmentRequest request, CancellationToken cancellationToken)
@@ -40,14 +43,17 @@ public class StockAdjustmentHandler : IRequestHandler<StockAdjustmentRequest, Pr
 
         if (product == null)
             throw new NotFoundException("Product was not found.");
-
+        
+        var previousQuantity = product.QuantityInStock;
         var newQuantity = product.QuantityInStock + request.QuantityChange;
-
+        
         product.UpdateQuantity(newQuantity);
 
         var movement = new StockMovement(product, request.QuantityChange, request.Reason);
 
         await _productRepository.AdjustStockAsync(product, movement, cancellationToken);
+        
+        await _lowStockEventService.PublishIfStockBecameLowAsync(product, previousQuantity, cancellationToken);
         
         await _cache.RemoveAsync(ProductCacheKeys.ById(product.Id), cancellationToken);
 

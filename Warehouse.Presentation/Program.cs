@@ -24,7 +24,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Warehouse.Presentation.Authorization;
 using Microsoft.OpenApi.Models;
+using Warehouse.Application.Services;
 using Warehouse.Infrastructure;
+using Warehouse.Presentation.Services;
+using Warehouse.Application.Settings;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -105,11 +108,19 @@ builder.Services.AddMediatR(configuration =>
     configuration.RegisterServicesFromAssemblyContaining<CreateProductRequest>();
 });
 
+
+
 // Localization
 builder.Services.AddLocalization(options =>
 {
     options.ResourcesPath = "Resources";
 });
+
+builder.Services.AddMinioStorage(builder.Configuration);
+builder.Services.AddRabbitMqMessaging(builder.Configuration);
+
+builder.Services.Configure<LowStockSettings>(builder.Configuration.GetSection(LowStockSettings.SectionName));
+builder.Services.AddScoped<LowStockEventService>();
 
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
@@ -203,6 +214,9 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddHttpClient();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICorrelationIdAccessor, HttpContextCorrelationIdAccessor>();
 
 
 var app = builder.Build();
