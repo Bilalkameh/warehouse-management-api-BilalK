@@ -10,7 +10,7 @@ public class ProductBuilder
     private double _price = 20;
     private int _quantityInStock = 25;
 
-    private Supplier _supplier = new("sup4", "germany", "sup4@mail.com", "+49-123-333");
+    private Supplier _supplier = new("sup1", "lebanon", "sup1@mail.com", "+12-345-111");
 
     private DateTime _expiryDate = new(2029, 6, 29, 21, 0, 0, DateTimeKind.Utc);
 

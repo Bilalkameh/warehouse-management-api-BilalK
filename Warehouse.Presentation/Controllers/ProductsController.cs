@@ -18,6 +18,7 @@ using Warehouse.Application.Commands.Products.ReplaceProductImage;
 using Warehouse.Application.Queries.Products.DownloadProductImage;
 using Warehouse.Application.Queries.Products.GetProductImages;
 using Warehouse.Application.Queries.Products.GetProductImageUrl;
+using Warehouse.Application.Queries.Products.GetLowStockProducts;
 
 namespace Warehouse.Presentation.Controllers;
 
@@ -332,6 +333,16 @@ public class ProductsController : ControllerBase
         var result = await _mediator.Send(request, cancellationToken);
 
         return Ok(result);
+    }
+    
+    // 16. get low stock products
+    
+    [HttpGet("low-stock")]
+    public async Task<IActionResult> GetLowStockProducts(CancellationToken cancellationToken)
+    {
+        var products = await _mediator.Send(new GetLowStockProductsRequest(), cancellationToken);
+
+        return Ok(products);
     }
     
 }

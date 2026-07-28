@@ -43,6 +43,13 @@ public class ExceptionHandlingMiddleware
             message = exception.Message;
         }
         
+        else if (exception is BadRequestException)
+        {
+            statusCode = StatusCodes.Status400BadRequest;
+            code = "BAD_REQUEST";
+            message = exception.Message;
+        }
+
         else if (exception is ConflictException)
         {
             statusCode = StatusCodes.Status409Conflict;
@@ -65,6 +72,7 @@ public class ExceptionHandlingMiddleware
             code = "BUSINESS_RULE_ERROR";
             message = exception.Message;
         }
+        
         else
         {
             statusCode = StatusCodes.Status500InternalServerError;

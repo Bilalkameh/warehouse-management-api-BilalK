@@ -17,7 +17,6 @@ public class CreateProductHandlerTests
     [Fact]
     public async Task Handle_ValidProduct_CreatesProduct()
     {
-        //Arrange
         var productRepositoryMock = new Mock<IProductRepository>();
         var supplierRepositoryMock = new Mock<ISupplierRepository>();
         var mapperMock = new Mock<IMapper>();
@@ -60,10 +59,8 @@ public class CreateProductHandlerTests
 
         var handler = new CreateProductHandler(productRepositoryMock.Object, supplierRepositoryMock.Object, mapperMock.Object, cacheMock.Object);
 
-        //Act 
         var result = await handler.Handle(request, CancellationToken.None);
 
-        //Assert
         result.Should().BeSameAs(expectedResult);
 
         productRepositoryMock.Verify(
@@ -164,9 +161,7 @@ public class CreateProductHandlerTests
 
     productRepositoryMock.Verify(
         repository => repository.AddAsync(
-            It.Is<Product>(createdProduct =>
-                createdProduct.CreatedAt >= beforeCreation &&
-                createdProduct.CreatedAt <= afterCreation),
+            It.Is<Product>(createdProduct => createdProduct.CreatedAt >= beforeCreation && createdProduct.CreatedAt <= afterCreation), 
             CancellationToken.None),
         Times.Once);
 }
@@ -217,9 +212,7 @@ public class CreateProductHandlerTests
         await handler.Handle(request, CancellationToken.None);
     
         productRepositoryMock.Verify(
-            repository => repository.AddAsync(
-                It.Is<Product>(createdProduct => createdProduct.Id != Guid.Empty),
-                CancellationToken.None),
+            repository => repository.AddAsync(It.Is<Product>(createdProduct => createdProduct.Id != Guid.Empty), CancellationToken.None),
             Times.Once);
     }
 
