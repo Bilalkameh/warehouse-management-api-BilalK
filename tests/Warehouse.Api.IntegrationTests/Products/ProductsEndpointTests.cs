@@ -1,19 +1,27 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Warehouse.Api.IntegrationTests.TestServices;
+using Warehouse.Application.Commands.Products.AddProductImage;
 using Warehouse.Application.Commands.Products.CreateProduct;
+using Warehouse.Application.Queries.Products.GetProductImages;
 using Warehouse.Application.ViewModels;
 using Warehouse.Presentation.Models;
 
 namespace Warehouse.Api.IntegrationTests.Products;
 
-public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
+public class ProductsEndpointTests :
+    IClassFixture<CustomWebApplicationFactory>,
+    IAsyncLifetime
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public ProductsEndpointTests(CustomWebApplicationFactory factory)
+    public ProductsEndpointTests(
+        CustomWebApplicationFactory factory)
     {
         _factory = factory;
 
@@ -39,21 +47,18 @@ public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>,
     [Fact]
     public async Task GetAllProducts_ReturnsSeededProducts()
     {
-        var response =
-            await _client.GetAsync("/api/products");
+        var response = await _client.GetAsync("/api/products");
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var products = await response.Content
             .ReadFromJsonAsync<List<ProductViewModel>>();
 
         products.Should().NotBeNull();
         products!.Should().HaveCount(2);
-
-        products.Should().Contain(product => product.SKU == "KEY-002");
+        products.Should().Contain(product =>
+            product.SKU == "KEY-002");
     }
-
 
     [Fact]
     public async Task GetProductById_ExistingProduct_ReturnsProduct()
@@ -61,10 +66,10 @@ public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>,
         var seededProduct =
             await GetSeededProductAsync("KEY-002");
 
-        var response = await _client.GetAsync($"/api/products/{seededProduct.Id}");
+        var response = await _client.GetAsync(
+            $"/api/products/{seededProduct.Id}");
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var product = await response.Content
             .ReadFromJsonAsync<ProductViewModel>();
@@ -74,14 +79,13 @@ public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>,
         product.SKU.Should().Be("KEY-002");
     }
 
-
     [Fact]
     public async Task GetProductById_InvalidId_ReturnsNotFound()
     {
-        var response = await _client.GetAsync($"/api/products/{Guid.NewGuid()}");
+        var response = await _client.GetAsync(
+            $"/api/products/{Guid.NewGuid()}");
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
         var error = await response.Content
             .ReadFromJsonAsync<ApiErrorResponse>();
@@ -90,14 +94,13 @@ public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>,
         error!.Code.Should().Be("NOT_FOUND");
     }
 
-
     [Fact]
     public async Task SearchProducts_NameFilter_ReturnsMatches()
     {
-        var response = await _client.GetAsync("/api/products/search?name=keyboard2");
+        var response = await _client.GetAsync(
+            "/api/products/search?name=keyboard2");
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var products = await response.Content
             .ReadFromJsonAsync<List<ProductViewModel>>();
@@ -107,54 +110,150 @@ public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>,
         products![0].SKU.Should().Be("KEY-002");
     }
 
-
     [Fact]
     public async Task GetLowStockProducts_ReturnsLowStockProducts()
     {
-        var response = await _client.GetAsync("/api/products/low-stock");
+        var response = await _client.GetAsync(
+            "/api/products/low-stock");
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var products = await response.Content
             .ReadFromJsonAsync<List<ProductViewModel>>();
 
         products.Should().NotBeNull();
 
-        var lowStockProducts = products!;
+        products!.Should().ContainSingle(product =>
+            product.SKU == "MOU-001");
 
-        lowStockProducts.Should().ContainSingle(product => product.SKU == "MOU-001");
-        lowStockProducts.Should().OnlyContain(product => product.QuantityInStock < 10 && !product.IsArchived);
+        products.Should().OnlyContain(product =>
+            product.QuantityInStock < 10 &&
+            !product.IsArchived);
     }
-
 
     [Fact]
-    public async Task CreateProduct_ValidRequest_ReturnsCreated()
+    public async Task CreateProduct_ValidRequest_PersistsCompleteProduct()
     {
         var request = CreateValidProductRequest("MON-001");
-        var response = await _client.PostAsJsonAsync("/api/products", request);
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.Created);
+        var response = await _client.PostAsJsonAsync(
+            "/api/products",
+            request);
 
-        var product = await response.Content
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        response.Content.Headers.ContentType!.MediaType.Should()
+            .Be("application/json");
+
+        var createdProduct = await response.Content
             .ReadFromJsonAsync<ProductViewModel>();
 
-        product.Should().NotBeNull();
-        product!.Id.Should().NotBe(Guid.Empty);
-        product.SKU.Should().Be(request.SKU);
+        createdProduct.Should().NotBeNull();
+        createdProduct!.Id.Should().NotBe(Guid.Empty);
+        createdProduct.Name.Should().Be(request.Name);
+        createdProduct.SKU.Should().Be(request.SKU);
+        createdProduct.Description.Should().Be(request.Description);
+        createdProduct.Price.Should().Be(request.Price);
+
+        createdProduct.QuantityInStock.Should()
+            .Be(request.QuantityInStock);
+
+        createdProduct.SupplierName.Should()
+            .Be(request.SupplierName);
+
+        createdProduct.ExpiryDate.Should()
+            .Be(request.ExpiryDate);
+
+        createdProduct.IsArchived.Should().BeFalse();
+        createdProduct.CreatedAt.Should().NotBe(default);
+        createdProduct.LastUpdatedAt.Should().NotBe(default);
+
+        response.Headers.Location.Should().NotBeNull();
+
+        response.Headers.Location!.ToString().Should()
+            .EndWith($"/api/products/{createdProduct.Id}");
+
+        var getResponse = await _client.GetAsync($"/api/products/{createdProduct.Id}");
+
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        getResponse.Content.Headers.ContentType!.MediaType.Should()
+            .Be("application/json");
+
+        var persistedProduct = await getResponse.Content
+            .ReadFromJsonAsync<ProductViewModel>();
+
+        persistedProduct.Should().BeEquivalentTo(createdProduct);
     }
 
+    [Fact]
+    public async Task UploadProductImage_ValidJpeg_PersistsImageAndBinaryContent()
+    {
+        var product = await GetSeededProductAsync("KEY-002");
+
+        var imageBytes = new byte[]
+        {
+            0xFF, 0xD8, 0xFF, 0xE0,
+            0x10, 0x20, 0x30, 0x40,
+            0xFF, 0xD9
+        };
+
+        using var form = CreateImageForm(imageBytes, "keyboard.jpg", "image/jpeg");
+
+        var response = await _client.PostAsync($"/api/products/{product.Id}/image", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        response.Content.Headers.ContentType!.MediaType.Should()
+            .Be("application/json");
+
+        var result = await response.Content
+            .ReadFromJsonAsync<AddProductImageResponse>();
+
+        result.Should().NotBeNull();
+        result!.Success.Should().BeTrue();
+        result.Id.Should().NotBe(Guid.Empty);
+
+        var imagesResponse = await _client.GetAsync($"/api/products/{product.Id}/images");
+
+        imagesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        imagesResponse.Content.Headers.ContentType!.MediaType.Should()
+            .Be("application/json");
+
+        var images = await imagesResponse.Content
+            .ReadFromJsonAsync<List<GetProductImagesResponse>>();
+
+        images.Should().ContainSingle(image =>
+            image.Id == result.Id &&
+            image.FileName == "keyboard.jpg");
+
+        var fileStorage = _factory.Services
+            .GetRequiredService<TestFileStorageService>();
+
+        fileStorage.Files.Should().ContainSingle();
+
+        var storedFile = fileStorage.Files.Single();
+
+        storedFile.Key.Should()
+            .StartWith($"products/{product.Id}/")
+            .And.EndWith(".jpg");
+
+        storedFile.Value.ContentType.Should().Be("image/jpeg");
+
+        storedFile.Value.FileSize.Should()
+            .Be(imageBytes.LongLength);
+
+        storedFile.Value.Content.Should().Equal(imageBytes);
+    }
 
     [Fact]
     public async Task CreateProduct_DuplicateSku_ReturnsConflict()
     {
         var request = CreateValidProductRequest("KEY-002");
+        var response = await _client.PostAsJsonAsync("/api/products", request);
 
-        var response = await _client.PostAsJsonAsync("/api/products",request);
-
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.Conflict);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
         var error = await response.Content
             .ReadFromJsonAsync<ApiErrorResponse>();
@@ -163,21 +262,17 @@ public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>,
         error!.Code.Should().Be("CONFLICT");
     }
 
-
     [Fact]
     public async Task UpdateQuantity_ExistingProduct_UpdatesQuantity()
     {
         var seededProduct = await GetSeededProductAsync("KEY-002");
-
         const int newQuantity = 40;
 
         var response = await _client.PostAsJsonAsync($"/api/products/{seededProduct.Id}/quantity", newQuantity);
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var updatedProduct = await _client
-            .GetFromJsonAsync<ProductViewModel>($"/api/products/{seededProduct.Id}");
+        var updatedProduct = await _client.GetFromJsonAsync<ProductViewModel>($"/api/products/{seededProduct.Id}");
 
         updatedProduct.Should().NotBeNull();
 
@@ -185,69 +280,101 @@ public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>,
             .Be(newQuantity);
     }
 
-
     [Fact]
     public async Task UpdatePrice_ExistingProduct_UpdatesPrice()
     {
         var seededProduct = await GetSeededProductAsync("KEY-002");
-
         const double newPrice = 35.50;
-
         var response = await _client.PostAsJsonAsync($"/api/products/{seededProduct.Id}/price", newPrice);
 
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var updatedProduct = await _client
-            .GetFromJsonAsync<ProductViewModel>($"/api/products/{seededProduct.Id}");
+        var updatedProduct = await _client.GetFromJsonAsync<ProductViewModel>($"/api/products/{seededProduct.Id}");
 
         updatedProduct.Should().NotBeNull();
         updatedProduct!.Price.Should().Be(newPrice);
     }
 
-
     [Fact]
-    public async Task DeleteProduct_ExistingProduct_ReturnsOk()
-    {
-        var seededProduct = await GetSeededProductAsync("KEY-002");
-
-        var response = await _client.DeleteAsync($"/api/products/{seededProduct.Id}");
-
-        response.StatusCode.Should()
-            .Be(HttpStatusCode.OK);
-    }
-
-
-    [Fact]
-    public async Task DeleteProduct_ArchivedProductStillExists()
+    public async Task DeleteProduct_ExistingProduct_ArchivesProductAndKeepsImage()
     {
         var seededProduct =
             await GetSeededProductAsync("KEY-002");
 
-        await _client.DeleteAsync($"/api/products/{seededProduct.Id}");
-        var response = await _client.GetAsync($"/api/products/{seededProduct.Id}");
+        var imageBytes = new byte[]
+        {
+            0xFF, 0xD8, 0xFF, 0xD9
+        };
 
-        response.StatusCode.Should()
+        using var form = CreateImageForm(imageBytes, "keyboard.jpg", "image/jpeg");
+
+        var uploadResponse = await _client.PostAsync($"/api/products/{seededProduct.Id}/image", form);
+        uploadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var uploadedImage = await uploadResponse.Content
+            .ReadFromJsonAsync<AddProductImageResponse>();
+
+        uploadedImage.Should().NotBeNull();
+        uploadedImage!.Success.Should().BeTrue();
+
+        var response = await _client.DeleteAsync($"/api/products/{seededProduct.Id}");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentType.Should().BeNull();
+
+        (await response.Content.ReadAsStringAsync())
+            .Should().BeEmpty();
+
+        var getProductResponse = await _client.GetAsync(
+            $"/api/products/{seededProduct.Id}");
+
+        getProductResponse.StatusCode.Should()
             .Be(HttpStatusCode.OK);
 
-        var product = await response.Content
+        var archivedProduct = await getProductResponse.Content
             .ReadFromJsonAsync<ProductViewModel>();
 
-        product.Should().NotBeNull();
-        product!.IsArchived.Should().BeTrue();
+        archivedProduct.Should().NotBeNull();
+        archivedProduct!.Id.Should().Be(seededProduct.Id);
+        archivedProduct.SKU.Should().Be(seededProduct.SKU);
+        archivedProduct.IsArchived.Should().BeTrue();
+
+        var imagesResponse = await _client.GetAsync($"/api/products/{seededProduct.Id}/images");
+
+        imagesResponse.StatusCode.Should()
+            .Be(HttpStatusCode.OK);
+
+        imagesResponse.Content.Headers.ContentType!.MediaType.Should()
+            .Be("application/json");
+
+        var persistedImages = await imagesResponse.Content
+            .ReadFromJsonAsync<List<GetProductImagesResponse>>();
+
+        persistedImages.Should().ContainSingle(image =>
+            image.Id == uploadedImage.Id &&
+            image.FileName == "keyboard.jpg");
+
+        var fileStorage = _factory.Services
+            .GetRequiredService<TestFileStorageService>();
+
+        fileStorage.Files.Should().ContainSingle();
+
+        fileStorage.Files.Single().Value.Content.Should()
+            .Equal(imageBytes);
     }
 
-
-    private async Task<ProductViewModel>
-        GetSeededProductAsync(string sku)
+    private async Task<ProductViewModel> GetSeededProductAsync(
+        string sku)
     {
-        var products = await _client.GetFromJsonAsync<List<ProductViewModel>>("/api/products");
+        var products =
+            await _client.GetFromJsonAsync<List<ProductViewModel>>(
+                "/api/products");
 
-        return products!.Single(product => product.SKU == sku);
+        return products!.Single(product =>
+            product.SKU == sku);
     }
 
-    private static CreateProductRequest
-        CreateValidProductRequest(string sku)
+    private static CreateProductRequest CreateValidProductRequest(
+        string sku)
     {
         return new CreateProductRequest
         {
@@ -259,5 +386,16 @@ public class ProductsEndpointTests : IClassFixture<CustomWebApplicationFactory>,
             SupplierName = "sup1",
             ExpiryDate = DateTime.UtcNow.AddYears(2)
         };
+    }
+
+    private static MultipartFormDataContent CreateImageForm(byte[] imageBytes, string fileName, string contentType)
+    {
+        var form = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(imageBytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+        form.Add(fileContent, "file", fileName);
+
+        return form;
     }
 }

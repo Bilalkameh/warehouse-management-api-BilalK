@@ -13,23 +13,22 @@ public class ProductImageRepository : IProductImageRepository
         _context = context;
     }
 
-    public async Task AddAsync(ProductImage image, CancellationToken cancellationToken)
+    public async Task AddAsync(
+        ProductImage image,
+        CancellationToken cancellationToken)
     {
-        await _context.ProductImages.AddAsync(
-            image,
-            cancellationToken);
-
-        await _context.SaveChangesAsync(
-            cancellationToken);
+        await _context.ProductImages.AddAsync(image, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<List<ProductImage>> GetByProductIdAsync(Guid productId, CancellationToken cancellationToken)
     {
         return await _context.ProductImages
+            .AsNoTracking()
             .Where(image => image.ProductId == productId)
             .ToListAsync(cancellationToken);
     }
-    
+
     public async Task<ProductImage?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _context.ProductImages
@@ -52,5 +51,3 @@ public class ProductImageRepository : IProductImageRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 }
-    
-    

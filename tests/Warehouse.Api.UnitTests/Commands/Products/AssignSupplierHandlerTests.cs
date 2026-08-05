@@ -131,4 +131,56 @@ public class AssignSupplierHandlerTests
             repository => repository.UpdateAsync(It.IsAny<Product>(), CancellationToken.None),
             Times.Never);
     }
+    
+    // Added this to the existing class as the Ai requested
+    [Fact]
+    public async Task Handle_ArchivedProduct_ThrowsBusinessRuleExceptionWithoutUpdatingProduct()
+    {
+        var productRepositoryMock = new Mock<IProductRepository>();
+        var supplierRepositoryMock = new Mock<ISupplierRepository>();
+
+        var product = new ProductBuilder().Build();
+        var originalSupplier = product.Supplier;
+        var originalSupplierId = product.SupplierId;
+
+        product.Archive();
+
+        var request = new AssignSupplierRequest
+        {
+            ProductId = product.Id,
+            SupplierId = Guid.NewGuid()
+        };
+
+        productRepositoryMock
+            .Setup(repository => repository.GetByIdAsync(
+                request.ProductId,
+                CancellationToken.None))
+            .ReturnsAsync(product);
+
+        var handler = new AssignSupplierHandler(
+            productRepositoryMock.Object,
+            supplierRepositoryMock.Object);
+
+        Func<Task> action = async () =>
+            await handler.Handle(request, CancellationToken.None);
+
+        await action.Should()
+            .ThrowAsync<BusinessRuleException>()
+            .WithMessage("Archived products cannot be updated.");
+
+        product.Supplier.Should().BeSameAs(originalSupplier);
+        product.SupplierId.Should().Be(originalSupplierId);
+
+        supplierRepositoryMock.Verify(
+            repository => repository.GetByIdAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        productRepositoryMock.Verify(
+            repository => repository.UpdateAsync(
+                It.IsAny<Product>(),
+                CancellationToken.None),
+            Times.Never);
+    }
 }

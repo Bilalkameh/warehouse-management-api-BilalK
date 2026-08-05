@@ -28,6 +28,7 @@ using Warehouse.Application.Services;
 using Warehouse.Infrastructure;
 using Warehouse.Presentation.Services;
 using Warehouse.Application.Settings;
+using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,10 +52,15 @@ builder.Services.AddScoped<ActionLoggingFilter>();
 builder.Services.AddScoped<ModelValidationFilter>();
 
 builder.Services.AddControllers(options =>
-{
-    options.Filters.AddService<ActionLoggingFilter>();
-    options.Filters.AddService<ModelValidationFilter>();
-});
+    {
+        options.Filters.AddService<ActionLoggingFilter>();
+        options.Filters.AddService<ModelValidationFilter>();
+    })
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter());
+    });
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -94,12 +100,14 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddAutoMapper(configuration => { }, typeof(MappingProfile));
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
 builder.Services.AddScoped<ISupplierDocumentRepository, SupplierDocumentRepository>();
 builder.Services.AddScoped<IInventoryDashboardRepository, InventoryDashboardRepository>();
+builder.Services.AddScoped<IShipmentRepository, ShipmentRepository>();
 builder.Services.AddScoped<IValidator<StockAdjustmentRequest>, StockAdjustmentRequestValidator>();
 
 // MediatR dependencies

@@ -1,25 +1,26 @@
+using System.Text.Json;
 using AutoMapper;
 using MediatR;
-using Warehouse.Application.ViewModels;
-using Warehouse.Domain.Interfaces;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Warehouse.Application.Cache;
 using Warehouse.Application.Interfaces;
+using Warehouse.Application.ViewModels;
+using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Queries.Products.GetProducts;
 
-public class GetProductsHandler
-    : IRequestHandler<GetProductsRequest, List<ProductViewModel>>
+public class GetProductsHandler : IRequestHandler<GetProductsRequest, List<ProductViewModel>>
 {
-    private readonly IProductRepository _repository;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
+    private readonly IProductRepository _productRepository;
     private readonly IMapper _mapper;
     private readonly ILogger<GetProductsHandler> _logger;
     private readonly ICacheService _cache;
 
-    public GetProductsHandler(IProductRepository repository, IMapper mapper,  ILogger<GetProductsHandler> logger, ICacheService cache)
+    public GetProductsHandler(IProductRepository productRepository, IMapper mapper, ILogger<GetProductsHandler> logger, ICacheService cache)
     {
-        _repository = repository;
+        _productRepository = productRepository;
         _mapper = mapper;
         _logger = logger;
         _cache = cache;
@@ -27,30 +28,34 @@ public class GetProductsHandler
 
     public async Task<List<ProductViewModel>> Handle(GetProductsRequest request, CancellationToken cancellationToken)
     {
-        
         var cacheKey = request.OnlyAvailable
             ? ProductCacheKeys.Available
             : ProductCacheKeys.All;
-        
-        var cachedProducts = await _cache.GetAsync(cacheKey, cancellationToken);
-        
-        if (cachedProducts != null)
-        {
-            _logger.LogInformation("All products loaded from cache using key {CacheKey}", cacheKey);
 
-            return JsonSerializer.Deserialize<List<ProductViewModel>>(cachedProducts)!;
+        var cachedProducts = await _cache.GetAsync(cacheKey, cancellationToken);
+
+        if (cachedProducts is not null)
+        {
+            var productViewModels = JsonSerializer.Deserialize<List<ProductViewModel>>(cachedProducts);
+
+            if (productViewModels is not null)
+            {
+                _logger.LogInformation("Products loaded from cache using key {CacheKey}", cacheKey);
+
+                return productViewModels;
+            }
         }
-        
+
         var products = request.OnlyAvailable
-            ? await _repository.GetAvailableAsync(cancellationToken)
-            : await _repository.GetAllAsync(cancellationToken);
-        
-        var productViewModels = _mapper.Map<List<ProductViewModel>>(products);
-        
-        await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(productViewModels),TimeSpan.FromMinutes(5), cancellationToken);
-        
+            ? await _productRepository.GetAvailableAsync(cancellationToken)
+            : await _productRepository.GetAllAsync(cancellationToken);
+
+        var result = _mapper.Map<List<ProductViewModel>>(products);
+
+        await _cache.SetAsync(cacheKey, JsonSerializer.Serialize(result), CacheDuration, cancellationToken);
+
         _logger.LogInformation("Products added to cache using key {CacheKey}", cacheKey);
-        
-        return productViewModels;
+
+        return result;
     }
 }

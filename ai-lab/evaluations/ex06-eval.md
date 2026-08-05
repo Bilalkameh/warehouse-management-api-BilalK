@@ -1,0 +1,1 @@
+The generated document seems to be good.

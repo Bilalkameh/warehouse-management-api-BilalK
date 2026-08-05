@@ -1,37 +1,33 @@
 using MediatR;
 using Warehouse.Application.Cache;
-using Warehouse.Domain.Interfaces;
 using Warehouse.Application.Exceptions;
 using Warehouse.Application.Interfaces;
-
+using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Commands.Products.UpdateProductPrice;
 
-public class UpdateProductPriceHandler : IRequestHandler<UpdateProductPriceRequest, UpdateProductPriceResponse>
+public class UpdateProductPriceHandler
+    : IRequestHandler<UpdateProductPriceRequest, UpdateProductPriceResponse>
 {
-    private readonly IProductRepository _repository;
+    private readonly IProductRepository _productRepository;
     private readonly ICacheService _cache;
 
-    public UpdateProductPriceHandler(IProductRepository repository,  ICacheService cache)
+    public UpdateProductPriceHandler(IProductRepository productRepository, ICacheService cache)
     {
-        _repository = repository;
+        _productRepository = productRepository;
         _cache = cache;
     }
 
     public async Task<UpdateProductPriceResponse> Handle(UpdateProductPriceRequest request, CancellationToken cancellationToken)
     {
-        var product = await _repository.GetByIdAsync(request.ProductId, cancellationToken);
-
-        if (product == null)
-            throw new NotFoundException("Product was not found.");
+        var product = await _productRepository.GetByIdAsync(request.ProductId, cancellationToken)
+                      ?? throw new NotFoundException("Product was not found.");
 
         product.UpdatePrice(request.Price);
 
+        await _productRepository.UpdateAsync(product, cancellationToken);
 
-        await _repository.UpdateAsync(product, cancellationToken);
-        await _cache.RemoveAsync(ProductCacheKeys.ById(product.Id), cancellationToken);
-        await _cache.RemoveAsync(ProductCacheKeys.All, cancellationToken);
-        await _cache.RemoveAsync(ProductCacheKeys.Available, cancellationToken);
+        await ProductCacheInvalidator.InvalidateProductAsync(_cache, product.Id, cancellationToken);
 
         return new UpdateProductPriceResponse
         {
