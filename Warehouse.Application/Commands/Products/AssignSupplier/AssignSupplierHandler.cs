@@ -1,6 +1,7 @@
 using MediatR;
-using Warehouse.Domain.Interfaces;
 using Warehouse.Application.Exceptions;
+using Warehouse.Domain.Exceptions;
+using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Commands.Products.AssignSupplier;
 
@@ -19,14 +20,17 @@ public class AssignSupplierHandler : IRequestHandler<AssignSupplierRequest, Assi
     {
         var product = await _productRepository.GetByIdAsync(request.ProductId, cancellationToken);
 
-        var supplier = await _supplierRepository.GetByIdAsync(request.SupplierId, cancellationToken);
-
         if (product == null)
             throw new NotFoundException("Product was not found.");
 
+        if (product.IsArchived)
+            throw new BusinessRuleException("Archived products cannot be updated.");
+
+        var supplier = await _supplierRepository.GetByIdAsync(request.SupplierId, cancellationToken);
+
         if (supplier == null)
             throw new NotFoundException("Supplier was not found.");
-        
+
         product.AssignSupplier(supplier);
 
         await _productRepository.UpdateAsync(product, cancellationToken);

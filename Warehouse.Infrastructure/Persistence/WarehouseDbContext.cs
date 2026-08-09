@@ -20,4 +20,30 @@ public class WarehouseDbContext : DbContext
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     
     public DbSet<SupplierDocument> SupplierDocuments => Set<SupplierDocument>();
+    
+    public DbSet<Shipment> Shipments => Set<Shipment>();
+
+    public DbSet<ShipmentProduct> ShipmentProducts =>
+        Set<ShipmentProduct>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Shipment>()
+            .HasIndex(shipment => shipment.TrackingNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<Shipment>()
+            .Property(shipment => shipment.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<ShipmentProduct>()
+            .HasIndex(item => new
+            {
+                item.ShipmentId,
+                item.ProductId
+            })
+            .IsUnique();
+    }
 }

@@ -9,15 +9,14 @@ using Warehouse.Domain.Interfaces;
 
 namespace Warehouse.Application.Commands.Products.CreateProduct;
 
-public class CreateProductHandler
-    : IRequestHandler<CreateProductRequest, ProductViewModel>
+public class CreateProductHandler : IRequestHandler<CreateProductRequest, ProductViewModel>
 {
     private readonly IProductRepository _productRepository;
     private readonly ISupplierRepository _supplierRepository;
     private readonly IMapper _mapper;
     private readonly ICacheService _cache;
 
-    public CreateProductHandler(IProductRepository productRepository, ISupplierRepository supplierRepository, IMapper mapper,  ICacheService cache)
+    public CreateProductHandler(IProductRepository productRepository, ISupplierRepository supplierRepository, IMapper mapper, ICacheService cache)
     {
         _productRepository = productRepository;
         _supplierRepository = supplierRepository;
@@ -31,11 +30,9 @@ public class CreateProductHandler
 
         if (skuExists)
             throw new ConflictException("A product with this SKU already exists.");
-        
-        var supplier = await _supplierRepository.GetByNameAsync(request.SupplierName, cancellationToken);
 
-        if (supplier == null)
-            throw new NotFoundException("Supplier was not found.");
+        var supplier = await _supplierRepository.GetByNameAsync(request.SupplierName, cancellationToken)
+            ?? throw new NotFoundException("Supplier was not found.");
 
         var product = new Product(
             request.Name,
@@ -47,11 +44,9 @@ public class CreateProductHandler
             request.ExpiryDate);
 
         await _productRepository.AddAsync(product, cancellationToken);
-        await _cache.RemoveAsync(ProductCacheKeys.All, cancellationToken);
 
-        await _cache.RemoveAsync(ProductCacheKeys.Available, cancellationToken);
-        
+        await ProductCacheInvalidator.InvalidateProductListsAsync(_cache, cancellationToken);
+
         return _mapper.Map<ProductViewModel>(product);
-        
     }
 }

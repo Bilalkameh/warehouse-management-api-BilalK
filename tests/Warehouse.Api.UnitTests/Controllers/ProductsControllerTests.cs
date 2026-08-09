@@ -5,7 +5,8 @@ using Moq;
 using Warehouse.Api.UnitTests.Helpers;
 using Warehouse.Application.Commands.Products.AddProductImage;
 using Warehouse.Presentation.Controllers;
-using Xunit;
+using Warehouse.Application.Queries.Products.GetExpiringSoonProducts;
+using Warehouse.Application.ViewModels;
 
 namespace Warehouse.Api.UnitTests.Controllers;
 
@@ -87,5 +88,45 @@ public class ProductsControllerTests
 
         mediatorMock.Verify(mediator => mediator.Send(It.IsAny<AddProductImageRequest>(),
                 It.IsAny<CancellationToken>()), Times.Never);
+    }
+    
+    [Fact]
+    public async Task GetExpiringSoonProducts_ReturnsOk()
+    {
+        var mediatorMock = new Mock<IMediator>();
+
+        var expectedResult = new List<ProductViewModel>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Milk",
+                SKU = "MILK-001",
+                ExpiryDate = new DateTime(2026, 8, 9)
+            }
+        };
+
+        mediatorMock
+            .Setup(mediator => mediator.Send(
+                It.IsAny<GetExpiringSoonProductsRequest>(),
+                CancellationToken.None))
+            .ReturnsAsync(expectedResult);
+
+        var controller = new ProductsController(mediatorMock.Object);
+
+        var result = await controller.GetExpiringSoonProducts(
+            CancellationToken.None);
+
+        var okResult = result.Should()
+            .BeOfType<OkObjectResult>()
+            .Which;
+
+        okResult.Value.Should().BeSameAs(expectedResult);
+
+        mediatorMock.Verify(
+            mediator => mediator.Send(
+                It.IsAny<GetExpiringSoonProductsRequest>(),
+                CancellationToken.None),
+            Times.Once);
     }
 }

@@ -19,6 +19,9 @@ using Warehouse.Application.Queries.Products.DownloadProductImage;
 using Warehouse.Application.Queries.Products.GetProductImages;
 using Warehouse.Application.Queries.Products.GetProductImageUrl;
 using Warehouse.Application.Queries.Products.GetLowStockProducts;
+using Warehouse.Application.Queries.Products.GetExpiringSoonProducts;
+using Warehouse.Application.ViewModels;
+using Warehouse.Application.Queries.Products.GetOutOfStockProducts;
 
 namespace Warehouse.Presentation.Controllers;
 
@@ -341,6 +344,35 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> GetLowStockProducts(CancellationToken cancellationToken)
     {
         var products = await _mediator.Send(new GetLowStockProductsRequest(), cancellationToken);
+
+        return Ok(products);
+    }
+    
+    // 17. get products expiriing in next 30 days
+    
+    [HttpGet("expiring-soon")]
+    [ProducesResponseType(typeof(List<ProductViewModel>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetExpiringSoonProducts(
+        CancellationToken cancellationToken)
+    {
+        var products = await _mediator.Send(
+            new GetExpiringSoonProductsRequest(),
+            cancellationToken);
+
+        return Ok(products);
+    }
+    
+    
+    // 18. Get out-of-stock products
+
+    [HttpGet("out-of-stock")]
+    [ProducesResponseType(typeof(List<ProductViewModel>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetOutOfStockProducts(
+        CancellationToken cancellationToken)
+    {
+        var products = await _mediator.Send(
+            new GetOutOfStockProductsRequest(),
+            cancellationToken);
 
         return Ok(products);
     }
