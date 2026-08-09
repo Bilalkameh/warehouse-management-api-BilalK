@@ -25,13 +25,14 @@ public class CreateProductHandler
         _cache = cache;
     }
 
-    public async Task<ProductViewModel> Handle(
-        CreateProductRequest request,
-        CancellationToken cancellationToken)
+    public async Task<ProductViewModel> Handle(CreateProductRequest request, CancellationToken cancellationToken)
     {
-        var supplier = await _supplierRepository.GetByNameAsync(
-            request.SupplierName,
-            cancellationToken);
+        var skuExists = await _productRepository.ExistsBySkuAsync(request.SKU, cancellationToken);
+
+        if (skuExists)
+            throw new ConflictException("A product with this SKU already exists.");
+        
+        var supplier = await _supplierRepository.GetByNameAsync(request.SupplierName, cancellationToken);
 
         if (supplier == null)
             throw new NotFoundException("Supplier was not found.");

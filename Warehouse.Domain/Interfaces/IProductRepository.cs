@@ -11,6 +11,6 @@ public interface IProductRepository
     Task UpdateAsync(Product  product, CancellationToken cancellationToken);
 	Task<List<Product>> SearchAsync(string? name, string? supplier, CancellationToken cancellationToken);
 	Task AdjustStockAsync(Product product, StockMovement movement, CancellationToken cancellationToken);
-	
 	Task<List<Product>> GetExpiringProductsAsync(DateTime date, CancellationToken cancellationToken);
+	Task<bool> ExistsBySkuAsync(string sku, CancellationToken cancellationToken);
 }

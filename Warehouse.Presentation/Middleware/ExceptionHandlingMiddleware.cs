@@ -42,6 +42,21 @@ public class ExceptionHandlingMiddleware
             code = "NOT_FOUND";
             message = exception.Message;
         }
+        
+        else if (exception is BadRequestException)
+        {
+            statusCode = StatusCodes.Status400BadRequest;
+            code = "BAD_REQUEST";
+            message = exception.Message;
+        }
+
+        else if (exception is ConflictException)
+        {
+            statusCode = StatusCodes.Status409Conflict;
+            code = "CONFLICT";
+            message = exception.Message;
+        }
+        
         else if (exception is ValidationException validationException)
         {
             statusCode = StatusCodes.Status400BadRequest;
@@ -57,6 +72,7 @@ public class ExceptionHandlingMiddleware
             code = "BUSINESS_RULE_ERROR";
             message = exception.Message;
         }
+        
         else
         {
             statusCode = StatusCodes.Status500InternalServerError;

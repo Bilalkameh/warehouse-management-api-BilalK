@@ -116,7 +116,10 @@ builder.Services.AddLocalization(options =>
     options.ResourcesPath = "Resources";
 });
 
-builder.Services.AddMinioStorage(builder.Configuration);
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddMinioStorage(builder.Configuration);
+}
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
 builder.Services.Configure<LowStockSettings>(builder.Configuration.GetSection(LowStockSettings.SectionName));
@@ -162,19 +165,21 @@ builder.Services
     .AddInMemoryStorage();
 
 // Background jobs
-builder.Services.AddHangfire(configuration =>
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-    configuration.UsePostgreSqlStorage(options =>
+    builder.Services.AddHangfire(configuration =>
     {
-        options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"));
+        configuration.UsePostgreSqlStorage(options =>
+        {
+            options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"));
+        });
     });
-});
+    builder.Services.AddHangfireServer();
+}
 
-builder.Services.AddHangfireServer();
 builder.Services.AddScoped<ProductExpiryJob>();
 
 
-builder.Services.AddMinioStorage(builder.Configuration);
 
 // Firebase authentication
 var firebaseProjectId = builder.Configuration["Firebase:ProjectId"]
@@ -226,10 +231,15 @@ app.UseRequestLocalization();
 app.UseMiddleware<RequestTimingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() ||
+    app.Environment.IsEnvironment("Testing"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+if (app.Environment.IsDevelopment())
+{
     app.UseHangfireDashboard("/hangfire");
 }
 
@@ -252,10 +262,17 @@ app.MapHealthChecksUI(options =>
     options.ApiPath = "/health-ui-api";
 });
 
-var productExpirySchedule = app.Configuration["BackgroundJobs:ProductExpirySchedule"] ?? Cron.Daily();
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    var productExpirySchedule = app.Configuration["BackgroundJobs:ProductExpirySchedule"] ?? Cron.Daily();
 
-RecurringJob.AddOrUpdate<ProductExpiryJob>("product-expiry-check", 
-    job => job.CheckProductExpiryAsync(CancellationToken.None),
-    productExpirySchedule);
+    RecurringJob.AddOrUpdate<ProductExpiryJob>("product-expiry-check",
+        job => job.CheckProductExpiryAsync(CancellationToken.None),
+        productExpirySchedule);
+}
 
 app.Run();
+
+public partial class Program
+{
+}
