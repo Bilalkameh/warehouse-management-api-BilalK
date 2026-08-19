@@ -168,7 +168,9 @@ builder.Services
 builder.Services
     .AddHealthChecksUI(options =>
     {
-        options.AddHealthCheckEndpoint("Warehouse API", "/health");
+        options.AddHealthCheckEndpoint(
+            "Warehouse API",
+            builder.Configuration["HealthChecksUI:Endpoint"] ?? "/health");
     })
     .AddInMemoryStorage();
 
@@ -233,6 +235,18 @@ builder.Services.AddScoped<ICorrelationIdAccessor, HttpContextCorrelationIdAcces
 
 
 var app = builder.Build();
+
+// Local Docker deployments start with empty named volumes. Apply the existing
+// EF Core migrations only when the Docker configuration explicitly enables it.
+if (app.Configuration.GetValue<bool>("Database:ApplyMigrations"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContextFactory = scope.ServiceProvider
+        .GetRequiredService<IDbContextFactory<WarehouseDbContext>>();
+
+    await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+    await dbContext.Database.MigrateAsync();
+}
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseRequestLocalization();

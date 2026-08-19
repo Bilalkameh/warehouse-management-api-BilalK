@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 using Warehouse.Notifications.Application;
 using Warehouse.Notifications.Infrastructure;
+using Warehouse.Notifications.Infrastructure.Persistence;
 using Warehouse.Notifications.Presentation.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +31,15 @@ builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection(Ra
 builder.Services.AddHostedService<RabbitMqConsumer>();
 
 var app = builder.Build();
+
+// Enabled by the Docker workflows so a new PostgreSQL volume is ready without
+// requiring a separate host-side dotnet-ef command.
+if (app.Configuration.GetValue<bool>("Database:ApplyMigrations"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<NotificationsDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {

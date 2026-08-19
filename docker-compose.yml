@@ -1,16 +1,190 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: warehouse-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in the env file}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the env file}
+      POSTGRES_DB: ${WAREHOUSE_DB:?Set WAREHOUSE_DB in the env file}
+      NOTIFICATIONS_DB: ${NOTIFICATIONS_DB:?Set NOTIFICATIONS_DB in the env file}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" &&
+          psql -U "$${POSTGRES_USER}" -d postgres -tAc
+          "SELECT 1 FROM pg_database WHERE datname='$${NOTIFICATIONS_DB}'" | grep -q 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - db-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: warehouse-redis
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - cache-network
+
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    container_name: minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    volumes:
-      - minio_data:/data
+    container_name: warehouse-minio
     command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in the env file}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in the env file}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+    networks:
+      - storage-network
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: warehouse-minio-init
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in the env file}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in the env file}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:?Set MINIO_BUCKET_NAME in the env file}
+    entrypoint: >-
+      /bin/sh -c "
+      until /usr/bin/mc alias set local http://minio:9000
+      $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do sleep 2; done;
+      /usr/bin/mc mb --ignore-existing local/$${MINIO_BUCKET_NAME};
+      "
+    restart: "no"
+    networks:
+      - storage-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: warehouse-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in the env file}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in the env file}
+    ports:
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - messaging-network
+
+  warehouse-api:
+    image: warehouse-api:dev
+    container_name: warehouse-api
+    build:
+      context: .
+      dockerfile: Warehouse.Presentation/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      Database__ApplyMigrations: "true"
+      HealthChecksUI__Endpoint: http://127.0.0.1:8080/health
+      ConnectionStrings__DefaultConnection: >-
+        Host=postgres;Port=5432;Database=${WAREHOUSE_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Redis: redis:6379
+      Minio__Endpoint: minio:9000
+      Minio__AccessKey: ${MINIO_ROOT_USER}
+      Minio__SecretKey: ${MINIO_ROOT_PASSWORD}
+      Minio__BucketName: ${MINIO_BUCKET_NAME}
+      Minio__UseSSL: "false"
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__ExchangeName: warehouse.events
+      Firebase__ProjectId: ${FIREBASE_PROJECT_ID:?Set FIREBASE_PROJECT_ID in the env file}
+    ports:
+      - "127.0.0.1:5035:8080"
+    volumes:
+      - api-logs:/app/Logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - db-network
+      - cache-network
+      - storage-network
+      - messaging-network
+
+  warehouse-notifications:
+    image: warehouse-notifications:dev
+    container_name: warehouse-notifications
+    build:
+      context: .
+      dockerfile: Warehouse.Notifications.Presentation/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      Database__ApplyMigrations: "true"
+      ConnectionStrings__NotificationsConnection: >-
+        Host=postgres;Port=5432;Database=${NOTIFICATIONS_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: "5672"
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__ExchangeName: warehouse.events
+      RabbitMq__QueueName: notifications.warehouse-events
+    ports:
+      - "127.0.0.1:5062:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - db-network
+      - messaging-network
+
+networks:
+  db-network:
+    driver: bridge
+  cache-network:
+    driver: bridge
+  storage-network:
+    driver: bridge
+  messaging-network:
+    driver: bridge
 
 volumes:
-  minio_data:
+  postgres-data:
+  redis-data:
+  minio-data:
+  rabbitmq-data:
+  api-logs:
