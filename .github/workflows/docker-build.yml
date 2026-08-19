@@ -1,0 +1,49 @@
+name: Build Docker images
+
+on:
+  workflow_call:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Warehouse API image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Warehouse.Presentation/Dockerfile
+          push: false
+          tags: warehouse-api:${{ github.sha }}
+          outputs: type=docker,dest=${{ runner.temp }}/warehouse-api.tar
+
+      - name: Build notification image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Warehouse.Notifications.Presentation/Dockerfile
+          push: false
+          tags: warehouse-notifications:${{ github.sha }}
+          outputs: type=docker,dest=${{ runner.temp }}/warehouse-notifications.tar
+
+      - name: Upload Docker images
+        uses: actions/upload-artifact@v7
+        with:
+          name: warehouse-images
+          path: |
+            ${{ runner.temp }}/warehouse-api.tar
+            ${{ runner.temp }}/warehouse-notifications.tar
+          compression-level: 0
+          retention-days: 1
